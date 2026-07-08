@@ -39,7 +39,39 @@
         }
       }
     },
+    "/apps/{id}/caches": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "caches": { "type": "array", "items": { "$ref": "#/components/schemas/Cache" } }
+                  },
+                  "required": ["caches"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/builds": {
+      "post": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": { "buildId": { "type": "string" } },
+                  "required": ["buildId"]
+                }
+              }
+            }
+          }
+        }
+      },
       "get": {
         "tags": ["Builds"],
         "operationId": "listBuilds",
@@ -110,6 +142,19 @@
           "projectType": { "type": ["string", "null"] },
           "lastBuildId": { "type": ["string", "null"] },
           "iconUrl": { "type": ["string", "null"] }
+        },
+        "required": ["_id"]
+      },
+      "Cache": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "_id": { "type": "string" },
+          "appId": { "type": "string" },
+          "workflowId": { "type": ["string", "null"] },
+          "platform": { "type": ["string", "null"] },
+          "lastUsed": { "type": ["string", "null"] },
+          "size": { "type": ["integer", "null"], "description": "size in bytes" }
         },
         "required": ["_id"]
       },

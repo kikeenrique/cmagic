@@ -4,6 +4,9 @@ import Foundation
 public enum CodemagicError: Error, CustomStringConvertible, Sendable {
     case configFileMissing(path: String)
     case tokenMissing(path: String)
+    case unexpectedStatus(Int)
+    case invalidURL(String)
+    case badResponse(Int)
 
     public var description: String {
         switch self {
@@ -11,6 +14,12 @@ public enum CodemagicError: Error, CustomStringConvertible, Sendable {
             return "No config file at \(path). Create it with:\n\n    token = \"<your Codemagic API token>\"\n"
         case .tokenMissing(let path):
             return "No `token` found in \(path). Add a line:\n\n    token = \"<your Codemagic API token>\"\n"
+        case .unexpectedStatus(let code):
+            return "Unexpected HTTP status \(code) from the Codemagic API."
+        case .invalidURL(let value):
+            return "Invalid URL: \(value)"
+        case .badResponse(let code):
+            return "Request failed with HTTP \(code)."
         }
     }
 }

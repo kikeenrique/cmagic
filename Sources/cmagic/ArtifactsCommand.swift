@@ -6,7 +6,7 @@ struct Artifacts: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "artifacts",
         abstract: "Work with build artefacts.",
-        subcommands: [Pull.self]
+        subcommands: [Pull.self, PublicURL.self]
     )
 
     /// `cmagic artifacts pull` — resolve the latest build for a branch, match an
@@ -59,6 +59,48 @@ struct Artifacts: AsyncParsableCommand {
                 print(outDir.path)
             } else {
                 print(file.path)
+            }
+        }
+    }
+
+    /// `cmagic artifacts public-url` — mint a tokenless, expiring download URL for
+    /// an artefact matched on the latest build (same resolution as `pull`).
+    struct PublicURL: AsyncParsableCommand {
+        static let configuration = CommandConfiguration(commandName: "public-url", abstract: "Create a public (tokenless) download URL for an artefact.")
+
+        @Option(name: [.short, .long], help: "Application id (defaults to `app` in config).")
+        var app: String?
+
+        @Option(name: [.short, .long], help: "Branch (defaults to `branch` in config).")
+        var branch: String?
+
+        @Option(name: [.short, .long], help: "Artefact name (substring, case-insensitive).")
+        var name: String
+
+        @Option(name: .long, help: "Hours until the URL expires.")
+        var expiresInHours: Double = 24
+
+        func run() async throws {
+            let (config, cm) = try Session.loadConfigAndClient()
+            let appId = try Session.resolveAppId(app, config: config)
+            let branchFilter = branch ?? config.branch
+
+            guard let build = try await cm.latestBuild(appId: appId, branch: branchFilter) else {
+                throw CleanExit.message("No build found for app \(appId)\(branchFilter.map { " on branch \($0)" } ?? "").")
+            }
+            let artefacts = build.artefacts ?? []
+            guard let artefact = artefacts.first(where: { ($0.name ?? "").localizedCaseInsensitiveContains(name) }),
+                  let path = artefact.path else {
+                let names = artefacts.compactMap(\.name).joined(separator: ", ")
+                throw CleanExit.message("No artefact matching \"\(name)\" in build \(build._id). Available: \(names.isEmpty ? "(none)" : names)")
+            }
+            let result = try await cm.artefactPublicURL(
+                artefactPath: path,
+                expiresAt: Date().addingTimeInterval(expiresInHours * 3600)
+            )
+            print(result.url)
+            if let expiresAt = result.expiresAt {
+                FileHandle.standardError.write(Data("expires: \(expiresAt)\n".utf8))
             }
         }
     }

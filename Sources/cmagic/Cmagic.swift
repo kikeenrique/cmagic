@@ -6,7 +6,7 @@ struct Cmagic: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "cmagic",
         abstract: "Inspect Codemagic builds and pull their artefacts from the terminal.",
-        subcommands: [Apps.self, Builds.self, Build.self, Artifacts.self]
+        subcommands: [Apps.self, Builds.self, Build.self, Artifacts.self, Caches.self]
     )
 }
 
@@ -68,28 +68,80 @@ struct Builds: AsyncParsableCommand {
     }
 }
 
-// MARK: - build <id>
+// MARK: - build show|start|cancel
 
 struct Build: AsyncParsableCommand {
-    static let configuration = CommandConfiguration(commandName: "build", abstract: "Show one build's detail.")
+    static let configuration = CommandConfiguration(
+        commandName: "build",
+        abstract: "Inspect and control a build.",
+        subcommands: [Show.self, Start.self, Cancel.self]
+    )
 
-    @Argument(help: "Build id.")
-    var buildId: String
+    struct Show: AsyncParsableCommand {
+        static let configuration = CommandConfiguration(commandName: "show", abstract: "Show one build's detail.")
 
-    func run() async throws {
-        let (_, cm) = try Session.loadConfigAndClient()
-        let b = try await cm.build(id: buildId)
-        print("id:         \(b._id)")
-        print("status:     \(b.status ?? "?")")
-        print("branch/tag: \(b.branch ?? b.tag ?? "-")")
-        print("workflow:   \(b.workflowId ?? b.fileWorkflowId ?? "-")")
-        print("created:    \(b.createdAt ?? "-")")
-        print("started:    \(b.startedAt ?? "-")")
-        print("finished:   \(b.finishedAt ?? "-")")
-        let arts = b.artefacts ?? []
-        print("artefacts:  \(arts.count)")
-        for a in arts {
-            print("  - \(a.name ?? "?")\t\(a.size.map(bytesHuman) ?? "-")")
+        @Argument(help: "Build id.")
+        var buildId: String
+
+        func run() async throws {
+            let (_, cm) = try Session.loadConfigAndClient()
+            let b = try await cm.build(id: buildId)
+            print("id:         \(b._id)")
+            print("status:     \(b.status ?? "?")")
+            print("branch/tag: \(b.branch ?? b.tag ?? "-")")
+            print("workflow:   \(b.workflowId ?? b.fileWorkflowId ?? "-")")
+            print("created:    \(b.createdAt ?? "-")")
+            print("started:    \(b.startedAt ?? "-")")
+            print("finished:   \(b.finishedAt ?? "-")")
+            let arts = b.artefacts ?? []
+            print("artefacts:  \(arts.count)")
+            for a in arts {
+                print("  - \(a.name ?? "?")\t\(a.size.map(bytesHuman) ?? "-")")
+            }
+        }
+    }
+
+    struct Start: AsyncParsableCommand {
+        static let configuration = CommandConfiguration(commandName: "start", abstract: "Trigger a new build.")
+
+        @Option(name: [.short, .long], help: "Application id (defaults to `app` in config).")
+        var app: String?
+
+        @Option(name: [.short, .long], help: "Workflow id (from the Workflow Editor / codemagic.yaml).")
+        var workflow: String
+
+        @Option(name: [.short, .long], help: "Branch to build (one of --branch/--tag required).")
+        var branch: String?
+
+        @Option(name: [.short, .long], help: "Tag to build (one of --branch/--tag required).")
+        var tag: String?
+
+        func validate() throws {
+            if (branch ?? "").isEmpty && (tag ?? "").isEmpty {
+                throw ValidationError("Provide --branch or --tag.")
+            }
+        }
+
+        func run() async throws {
+            let (config, cm) = try Session.loadConfigAndClient()
+            let appId = try Session.resolveAppId(app, config: config)
+            let buildId = try await cm.startBuild(appId: appId, workflowId: workflow, branch: branch, tag: tag)
+            print(buildId)
+        }
+    }
+
+    struct Cancel: AsyncParsableCommand {
+        static let configuration = CommandConfiguration(commandName: "cancel", abstract: "Cancel a running build.")
+
+        @Argument(help: "Build id.")
+        var buildId: String
+
+        func run() async throws {
+            let (_, cm) = try Session.loadConfigAndClient()
+            switch try await cm.cancelBuild(id: buildId) {
+            case .cancelled: print("cancelled \(buildId)")
+            case .alreadyFinished: print("build \(buildId) had already finished")
+            }
         }
     }
 }

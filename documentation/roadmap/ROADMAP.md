@@ -45,18 +45,20 @@ Verified live against a real token (July 2026, read endpoints only). See PROCESS
 - [x] `cmagic apps` — list apps → `_id`
 - [x] `cmagic builds --app <id> [--branch <b>] [--limit N]` (branch/limit are client-side — the v1
       API only filters by `appId`; first page only for now)
-- [x] `cmagic build <buildId>` — one build's detail (incl. artefacts + human sizes)
+- [x] `cmagic build show <buildId>` — one build's detail (incl. artefacts + human sizes)
 - [x] `cmagic artifacts pull [--app <id>] [--branch <b>] --name <substr> [-o <dir>]` — the core
       one-liner (latest build for branch → match artefact by name → download → auto-unzip zip/xcresult)
 
 All four verified live against the real token.
 
-## Phase 3 — Write ops & remaining surface ⏳
+## Phase 3 — Write ops & remaining surface ✅
 
-- [ ] `cmagic build start --app <id> --workflow <w> --branch <b>`
-- [ ] `cmagic build cancel <buildId>`
-- [ ] `cmagic artifacts public-url` (tokenless URL)
-- [ ] `cmagic caches` list / delete
+- [x] `cmagic build start --app <id> --workflow <w> (--branch <b> | --tag <t>)` — implemented
+      (not run live — triggers a real build)
+- [x] `cmagic build cancel <buildId>` — verified live (208 → "already finished")
+- [x] `cmagic artifacts public-url [--app] [--branch] --name <substr> [--expires-in-hours N]` —
+      verified live (URLSession-direct; slash-path not generator-safe)
+- [x] `cmagic caches list|delete [--app] [--cache-id]` — list verified live; delete implemented (202)
 
 ## Phase 4 — Polish & distribution ⏳
 

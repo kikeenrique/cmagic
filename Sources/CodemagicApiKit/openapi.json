@@ -208,6 +208,46 @@
           "_id"
         ],
         "type" : "object"
+      },
+      "Cache" : {
+        "additionalProperties" : true,
+        "properties" : {
+          "_id" : {
+            "type" : "string"
+          },
+          "appId" : {
+            "type" : "string"
+          },
+          "lastUsed" : {
+            "type" : [
+              "string",
+              "null"
+            ]
+          },
+          "platform" : {
+            "type" : [
+              "string",
+              "null"
+            ]
+          },
+          "size" : {
+            "description" : "size in bytes",
+            "type" : [
+              "integer",
+              "null"
+            ]
+          },
+          "workflowId" : {
+            "type" : [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required" : [
+          "_id"
+        ],
+        "type" : "object"
       }
     },
     "securitySchemes" : {
@@ -388,6 +428,17 @@
               "application/json" : {
                 "schema" : {
                   "additionalProperties" : true,
+                  "properties" : {
+                    "caches" : {
+                      "items" : {
+                        "$ref" : "#/components/schemas/Cache"
+                      },
+                      "type" : "array"
+                    }
+                  },
+                  "required" : [
+                    "caches"
+                  ],
                   "type" : "object"
                 }
               }
@@ -674,6 +725,14 @@
               "application/json" : {
                 "schema" : {
                   "additionalProperties" : true,
+                  "properties" : {
+                    "buildId" : {
+                      "type" : "string"
+                    }
+                  },
+                  "required" : [
+                    "buildId"
+                  ],
                   "type" : "object"
                 }
               }

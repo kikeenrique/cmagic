@@ -6,9 +6,9 @@ build's `TestResults-*.xcresult`) straight from the terminal. Codemagic ships no
 querying the service, so today the only remote-access route is raw `curl`; this package replaces
 that with a typed Swift client.
 
-> **Status: in progress.** API research, OpenAPI specs, the package (generated client + auth +
-> config + artefact downloader), and the core read commands are done and verified live. Write ops
-> (start/cancel), caches, and `--json` are next. See
+> **Status: in progress.** The full command surface (apps, builds, build show/start/cancel,
+> artifacts pull/public-url, caches) is implemented and verified live. Remaining: `--json` output,
+> decode-fixture tests, and `mise`/CI distribution. See
 > [`documentation/roadmap/ROADMAP.md`](documentation/roadmap/ROADMAP.md).
 
 ## Build, test, run
@@ -25,10 +25,16 @@ The token is read from the config file (see [Authentication](#authentication)).
 ```bash
 cmagic apps                                   # list apps: <id>  <name>
 cmagic builds --app <id> --limit 10           # recent builds (add --branch <b> to filter)
-cmagic build <buildId>                         # one build's detail + artefacts
+cmagic build show <buildId>                    # one build's detail + artefacts
+cmagic build start --app <id> --workflow <w> --branch main
+cmagic build cancel <buildId>
 
 # the flagship: pull the latest build's artefact for a branch, auto-unzipping zip/xcresult
 cmagic artifacts pull --app <id> --branch main --name TestResults -o ./out
+cmagic artifacts public-url --app <id> --branch main --name TestResults --expires-in-hours 24
+
+cmagic caches list --app <id>
+cmagic caches delete --app <id> [--cache-id <id>]
 ```
 
 `--app` and `--branch` fall back to `app`/`branch` in the config file if set. Run any command with
