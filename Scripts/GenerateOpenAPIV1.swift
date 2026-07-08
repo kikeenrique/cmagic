@@ -13,11 +13,17 @@
 // open objects (additionalProperties: true); tighten them by hand or against live
 // samples afterwards.
 //
+// After scraping, an optional hand-authored patch file (an OpenAPI fragment) is
+// deep-merged into the result. The patch holds what the docs omit — the
+// undocumented build read endpoints and shared response schemas. Merge rule:
+// dictionaries merge recursively, and on any leaf/array the patch wins.
+//
 // Usage:
-//   swift Scripts/GenerateOpenAPIV1.swift [docsDir] [outputFile]
+//   swift Scripts/GenerateOpenAPIV1.swift [docsDir] [outputFile] [patchFile]
 // Defaults:
 //   docsDir    = documentation/v1-api-docs
 //   outputFile = documentation/openapi-v1.generated.json
+//   patchFile  = documentation/openapi-v1.patch.json  (skipped if absent)
 //
 import Foundation
 
@@ -26,6 +32,7 @@ import Foundation
 let args = CommandLine.arguments
 let docsDir = args.count > 1 ? args[1] : "documentation/v1-api-docs"
 let outputFile = args.count > 2 ? args[2] : "documentation/openapi-v1.generated.json"
+let patchFile = args.count > 3 ? args[3] : "documentation/openapi-v1.patch.json"
 
 // MARK: - HTML helpers
 
@@ -220,6 +227,24 @@ func openAPIObject(_ ops: [Operation]) -> [String: Any] {
     ]
 }
 
+// MARK: - Patch merge
+
+/// Recursively merge `patch` into `base`. Dictionaries merge key-by-key; for any
+/// other value (leaf, array) the patch wins. Keys prefixed with "_" (e.g. comments)
+/// in the patch are ignored.
+func deepMerge(_ base: Any, _ patch: Any) -> Any {
+    guard var b = base as? [String: Any], let p = patch as? [String: Any] else { return patch }
+    for (key, value) in p {
+        if key.hasPrefix("_") { continue }
+        if let existing = b[key] {
+            b[key] = deepMerge(existing, value)
+        } else {
+            b[key] = value
+        }
+    }
+    return b
+}
+
 // MARK: - Main
 
 let pages: [(file: String, tag: String)] = [
@@ -242,7 +267,20 @@ guard !operations.isEmpty else {
     exit(1)
 }
 
-let spec = openAPIObject(operations)
+var spec = openAPIObject(operations)
+
+// Deep-merge the hand-authored patch (missing endpoints + schemas), if present.
+if FileManager.default.fileExists(atPath: patchFile) {
+    let patchData = try Data(contentsOf: URL(fileURLWithPath: patchFile))
+    let patch = try JSONSerialization.jsonObject(with: patchData)
+    spec = deepMerge(spec, patch) as! [String: Any]
+    let patchedPaths = ((patch as? [String: Any])?["paths"] as? [String: Any])?.count ?? 0
+    FileHandle.standardError.write("merged patch \(patchFile) (\(patchedPaths) path entrie(s))\n".data(using: .utf8)!)
+} else {
+    FileHandle.standardError.write("no patch file at \(patchFile) — skipping\n".data(using: .utf8)!)
+}
+
+let totalPaths = (spec["paths"] as? [String: Any])?.count ?? 0
 let data = try JSONSerialization.data(withJSONObject: spec, options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes])
 try data.write(to: URL(fileURLWithPath: outputFile))
-FileHandle.standardError.write("wrote \(operations.count) operations to \(outputFile)\n".data(using: .utf8)!)
+FileHandle.standardError.write("wrote \(totalPaths) paths (\(operations.count) scraped) to \(outputFile)\n".data(using: .utf8)!)

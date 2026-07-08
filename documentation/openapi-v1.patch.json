@@ -1,0 +1,86 @@
+{
+  "_comment": "Hand-authored overlay merged into the docs-scraped base by Scripts/GenerateOpenAPIV1.swift (deep merge, patch wins on leaves). Holds what the v1 HTML docs omit: the undocumented-but-real build read endpoints and the shared response schemas. Do not edit the generated output directly — edit this file.",
+  "paths": {
+    "/builds": {
+      "get": {
+        "tags": ["Builds"],
+        "operationId": "listBuilds",
+        "summary": "List / filter builds (undocumented in the v1 HTML docs)",
+        "parameters": [
+          { "name": "appId", "in": "query", "required": false, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Builds",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "builds": { "type": "array", "items": { "$ref": "#/components/schemas/Build" } }
+                  },
+                  "required": ["builds"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/builds/{id}": {
+      "get": {
+        "tags": ["Builds"],
+        "operationId": "getBuild",
+        "summary": "Get one build (undocumented in the v1 HTML docs)",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "The build",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "build": { "$ref": "#/components/schemas/Build" }
+                  },
+                  "required": ["build"]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Build": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "_id": { "type": "string" },
+          "status": { "type": "string" },
+          "branch": { "type": "string" },
+          "tag": { "type": "string" },
+          "workflowId": { "type": "string" },
+          "artifacts": { "type": "array", "items": { "$ref": "#/components/schemas/Artifact" } }
+        },
+        "required": ["_id"]
+      },
+      "Artifact": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "name": { "type": "string" },
+          "type": { "type": "string" },
+          "url": { "type": "string", "description": "secureFilename path used by the artifacts endpoints" }
+        },
+        "required": ["url"]
+      }
+    }
+  }
+}

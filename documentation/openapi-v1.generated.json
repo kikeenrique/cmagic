@@ -1,5 +1,56 @@
 {
   "components" : {
+    "schemas" : {
+      "Artifact" : {
+        "additionalProperties" : true,
+        "properties" : {
+          "name" : {
+            "type" : "string"
+          },
+          "type" : {
+            "type" : "string"
+          },
+          "url" : {
+            "description" : "secureFilename path used by the artifacts endpoints",
+            "type" : "string"
+          }
+        },
+        "required" : [
+          "url"
+        ],
+        "type" : "object"
+      },
+      "Build" : {
+        "additionalProperties" : true,
+        "properties" : {
+          "_id" : {
+            "type" : "string"
+          },
+          "artifacts" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Artifact"
+            },
+            "type" : "array"
+          },
+          "branch" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          },
+          "tag" : {
+            "type" : "string"
+          },
+          "workflowId" : {
+            "type" : "string"
+          }
+        },
+        "required" : [
+          "_id"
+        ],
+        "type" : "object"
+      }
+    },
     "securitySchemes" : {
       "apiToken" : {
         "in" : "header",
@@ -333,6 +384,47 @@
       }
     },
     "/builds" : {
+      "get" : {
+        "operationId" : "listBuilds",
+        "parameters" : [
+          {
+            "in" : "query",
+            "name" : "appId",
+            "required" : false,
+            "schema" : {
+              "type" : "string"
+            }
+          }
+        ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "additionalProperties" : true,
+                  "properties" : {
+                    "builds" : {
+                      "items" : {
+                        "$ref" : "#/components/schemas/Build"
+                      },
+                      "type" : "array"
+                    }
+                  },
+                  "required" : [
+                    "builds"
+                  ],
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Builds"
+          }
+        },
+        "summary" : "List / filter builds (undocumented in the v1 HTML docs)",
+        "tags" : [
+          "Builds"
+        ]
+      },
       "post" : {
         "operationId" : "postBuilds",
         "requestBody" : {
@@ -393,6 +485,46 @@
           }
         },
         "summary" : "Start a new build",
+        "tags" : [
+          "Builds"
+        ]
+      }
+    },
+    "/builds/{id}" : {
+      "get" : {
+        "operationId" : "getBuild",
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
+          }
+        ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "additionalProperties" : true,
+                  "properties" : {
+                    "build" : {
+                      "$ref" : "#/components/schemas/Build"
+                    }
+                  },
+                  "required" : [
+                    "build"
+                  ],
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "The build"
+          }
+        },
+        "summary" : "Get one build (undocumented in the v1 HTML docs)",
         "tags" : [
           "Builds"
         ]

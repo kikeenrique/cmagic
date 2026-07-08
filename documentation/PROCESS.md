@@ -75,9 +75,10 @@ The pages are server-rendered HTML with a regular shape per operation:
 ### Step 2 — convert to OpenAPI
 
 ```bash
-swift Scripts/GenerateOpenAPIV1.swift            # defaults to the paths below
+swift Scripts/GenerateOpenAPIV1.swift            # uses the defaults below
 # or explicitly:
-swift Scripts/GenerateOpenAPIV1.swift documentation/v1-api-docs documentation/openapi-v1.generated.json
+swift Scripts/GenerateOpenAPIV1.swift documentation/v1-api-docs \
+      documentation/openapi-v1.generated.json documentation/openapi-v1.patch.json
 ```
 
 The script (Foundation-only, no dependencies) extracts, per operation:
@@ -90,29 +91,37 @@ The script (Foundation-only, no dependencies) extracts, per operation:
 It sets sensible response codes it cannot infer from prose: `200` generic for reads/writes,
 `202` for DELETE (async), and an extra `208` on `/builds/:id/cancel`.
 
-Output: **`documentation/openapi-v1.generated.json`** — 11 operations across
-Applications / Builds / Artifacts / Caches.
+### Step 3 — merge the patch (happens automatically inside the script)
 
-### Two v1 spec files, on purpose
+The v1 HTML docs are incomplete, so after scraping, the script **deep-merges** a hand-authored
+overlay — **`documentation/openapi-v1.patch.json`** — into the result. Merge rule: dictionaries
+merge recursively; on any leaf or array the patch wins. Keys prefixed with `_` (comments) are
+ignored.
 
-| File | Source | Use |
-|---|---|---|
-| `openapi-v1.generated.json` | scraped from docs by the script | reproducible, faithful to what Codemagic documents |
-| `openapi-v1.yaml` | hand-curated superset | what we actually feed to the generator |
+The patch supplies what the docs omit:
 
-The **curated** `openapi-v1.yaml` enriches the generated baseline with things the docs omit:
-tighter response schemas (`Application`/`Build`/`Artifact`/`Cache`) and the **undocumented but
-real** `GET /builds` and `GET /builds/:id` (needed to list/inspect builds — the v1 docs describe
-neither). Regenerating the `.json` is how we detect when the docs drift; the `.yaml` is where we
-apply judgement.
+- the **undocumented-but-real** `GET /builds` and `GET /builds/:id` (needed to list/inspect
+  builds — the v1 docs describe neither),
+- the shared `Build` / `Artifact` response schemas those endpoints reference.
+
+Output: **`documentation/openapi-v1.generated.json`** — 11 scraped operations + 2 patched =
+13 operations across Applications / Builds / Artifacts / Caches. This single file is what we feed
+to swift-openapi-generator.
+
+**Never hand-edit the generated file.** To change the spec, edit either the docs (re-scrape) or
+`openapi-v1.patch.json` (enrichment), then re-run the script. Re-scraping is also how we detect
+when Codemagic's docs drift.
 
 ## 5. Known caveats
 
-- **Response fidelity.** The v1 docs don't specify response schemas, so generated responses are
-  open objects (`additionalProperties: true`). Tighten against live `curl` samples with a real
-  `CM_TOKEN`.
+- **Response fidelity.** The v1 docs don't specify response schemas, so scraped responses are
+  open objects (`additionalProperties: true`). Tighten via the patch or against live `curl`
+  samples with a real `CM_TOKEN`.
 - **Undocumented reads.** `GET /builds` and `GET /builds/:id` are not in the v1 docs, so the
-  scraper cannot emit them. They live only in the curated `openapi-v1.yaml`.
+  scraper cannot emit them — they come from `openapi-v1.patch.json`. Provenance: they are listed
+  (and marked "verified July 2026") in the original handoff brief
+  (`documentation/roadmap/codemagic-swift-cli-brief.md` §3) and used in its reference `curl`
+  flow. They have **not** yet been re-verified here against a live token.
 - **Artifact path parameter.** `secureFilename` is itself a multi-segment path
   (`<build-id>/<artifact-id>/<file>`). OpenAPI path params can't span `/` and the generator
   percent-encodes them, so the `/artifacts/...` operations are **not** generator-safe. Download by
@@ -135,8 +144,8 @@ swift Scripts/GenerateOpenAPIV1.swift
 
 ## 7. Next steps
 
-1. Validate `openapi-v1.yaml` against live responses; tighten schemas.
-2. Wire swift-openapi-generator (runtime + urlsession transport) against `openapi-v1.yaml`.
+1. Validate `openapi-v1.generated.json` against live responses; tighten schemas via the patch.
+2. Wire swift-openapi-generator (runtime + urlsession transport) against `openapi-v1.generated.json`.
 3. Add the thin `URLSession` artifact-download helper (bypassing the generator).
 
 [swift-openapi-generator]: https://github.com/apple/swift-openapi-generator
