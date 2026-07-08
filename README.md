@@ -61,11 +61,17 @@ Sources/
     openapi.json                 # spec fed to the generator (copy of documentation/openapi-v1.generated.json)
     openapi-generator-config.yaml
     Codemagic.swift              # client wrapper (base URL + auth middleware)
+    Codemagic+Convenience.swift  # model-returning API: apps/builds/caches/cancel/start/…
     AuthMiddleware.swift         # injects x-auth-token
     Configuration.swift          # CmagicConfig — loads token from the config file
     ArtefactDownloader.swift     # URLSession download of build.artefacts[].url
+    PublicURL.swift              # URLSession-direct artefact public-url helper
   cmagic/                        # executable (thin ArgumentParser front-end)
-Tests/CodemagicApiKitTests/
+    Cmagic.swift                 # root + apps/builds/build(show/start/cancel)
+    ArtifactsCommand.swift       # artifacts pull/public-url + unzip
+    CachesCommand.swift          # caches list/delete
+    OutputOptions.swift          # shared --json flag + emitter
+Tests/CodemagicApiKitTests/      # 21 offline tests (config, decoding, auth, Replay stubs)
 Scripts/
   GenerateOpenAPIV1.swift        # scrapes the v1 HTML docs → OpenAPI, merging a hand-authored patch
 documentation/
