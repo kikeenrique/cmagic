@@ -8,15 +8,17 @@ Legend: ✅ done · ⏳ pending · 🔑 blocked on a live `CM_TOKEN`.
 
 ## Status (July 2026)
 
-**Phases 0–3 complete; Phase 4 in progress.** The `cmagic` CLI implements the full command surface
+**Phases 0–4 complete.** The `cmagic` CLI implements the full command surface
 — `apps`, `builds`, `build show`/`show --steps`/`start`/`cancel`/`logs`, `artifacts pull/public-url`,
 `caches list/delete` — each with `--json` output, all verified live against a real token (except
 `build start`, which would trigger a real build). The `CodemagicApiKit` library wraps a
 swift-openapi-generator client (auth middleware + config-file token + artefact downloader). GitHub
 Actions CI runs build + test. 23 offline tests, ~83% library line coverage (networked paths stubbed
-with Replay).
+with Replay). Released as `0.1.0` with prebuilt universal binaries, distributed via a Homebrew tap
+and `mise`.
 
-**Remaining:** a README install section and `mise` distribution — both in Phase 4 below. CI is done.
+**Remaining:** only the deferred `POST /builds instanceType` live-check (would trigger a real build)
+and the open questions below (revisit v3; preview-API stability).
 
 ## Phase 0 — Research & API specs ✅
 
@@ -83,20 +85,22 @@ All four verified live against the real token.
       errors, model decoding (incl. `BuildAction` steps + subactions), `AuthMiddleware`, and the
       full networked layer (apps/builds/build/caches/cancel+208/start/public-url/download/step-log)
       via **Replay** synthetic stubs (no HAR, no private data). Replay is a test-only dependency.
-- [~] `README.md`: usage + `artifacts pull` example + `--json`/`jq` done; **install** section
-      still pending (needs distribution below)
+- [x] `README.md`: usage + `artifacts pull` example + `--json`/`jq` + **install** section
+      (Homebrew + `mise` github backend)
 - [x] Release automation — `mise/tasks/package` builds a universal (arm64+x86_64) binary via
       per-arch `swift build` + `lipo` and writes `dist/cmagic-{aarch64,x86_64}-apple-darwin.tar.gz`
       + `SHA256SUMS`; `mise/tasks/release <version>` tags + pushes. `.github/workflows/release.yml`
       runs `mise run package` on a `0.*` tag and attaches the assets to the GitHub release.
-- [ ] Cut the first release (`mise run release 0.1.0`) so distribution assets exist
-- [ ] Distribute via Homebrew tap (`kikeenrique/homebrew-tap`, arch-aware formula) + `mise` `ubi:`
-      (both consume the release binary assets); optionally a `mise use ubi:kikeenrique/cmagic` task
+- [x] Cut the first release — tag `0.1.0` (release CI built the assets; run 28978333390)
+- [x] Distribute via Homebrew tap (`kikeenrique/homebrew-tap`, arch-aware `Formula/cmagic.rb`) +
+      `mise` `github:` backend — both consume the release assets; verified: `brew install` +
+      `brew test` pass, `mise x github:kikeenrique/cmagic` runs. Use `github:` not `ubi:`: the
+      deprecated `ubi:` backend forces a `v`-prefixed tag (`v0.1.0`) and 404s our `0.1.0` tag.
 - [x] CI (build + test) on the standalone repo — GitHub Actions (`.github/workflows/ci.yml`),
       `swift build` + `swift test` on `macos-26`/Xcode 26.6, with SwiftPM caching
 
 Repo created (public, default branch `main`). Distribution consumes prebuilt release assets:
-Homebrew (`brew install kikeenrique/tap/cmagic`) and `mise` (`ubi:kikeenrique/cmagic`).
+Homebrew (`brew install kikeenrique/tap/cmagic`) and `mise` (`github:kikeenrique/cmagic`).
 
 ## Authentication (decided)
 

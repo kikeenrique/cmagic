@@ -6,11 +6,26 @@ build's `TestResults-*.xcresult`) straight from the terminal. Codemagic ships no
 querying the service, so today the only remote-access route is raw `curl`; this package replaces
 that with a typed Swift client.
 
-> **Status: in progress.** The full command surface (apps, builds, build show/start/cancel/logs,
+> **Status: usable.** The full command surface (apps, builds, build show/start/cancel/logs,
 > `show --steps`, artifacts pull/public-url, caches) is implemented and verified live, with `--json`
-> output, a GitHub Actions CI build/test, and an offline test suite (~83% library coverage).
-> Remaining: `mise` distribution + a README install section. See
+> output, a GitHub Actions CI build/test, an offline test suite (~83% library coverage), and
+> tagged releases with prebuilt universal binaries. See
 > [`documentation/roadmap/ROADMAP.md`](documentation/roadmap/ROADMAP.md).
+
+## Install
+
+Prebuilt universal (arm64 + x86_64) macOS binaries are attached to each
+[GitHub release](https://github.com/kikeenrique/cmagic/releases).
+
+```bash
+# Homebrew
+brew install kikeenrique/tap/cmagic
+
+# mise (github backend; ubi: also works but is deprecated upstream)
+mise use -g github:kikeenrique/cmagic        # latest, or pin @0.1.0
+```
+
+Or build from source (see below) and copy `.build/release/cmagic` onto your `PATH`.
 
 ## Build, test, run
 
