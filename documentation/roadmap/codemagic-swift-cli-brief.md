@@ -3,6 +3,11 @@
 **Audience:** an agent starting fresh in a new, empty repo. This is self-contained — you do not
 need the originating project to act on it.
 
+> **This is the original vision, kept as-is.** Live progress is tracked in
+> [`ROADMAP.md`](./ROADMAP.md). Some claims below (notably in §3 and §5) were corrected during
+> verification — e.g. `GET /builds`/`GET /builds/:id` and `instanceType` are **not** in the v1 docs.
+> See [`../PROCESS.md`](../PROCESS.md) §5 for the audit before trusting the tables here.
+
 ## 1. What we're building & why
 
 A **Swift CLI + library** that talks to the **Codemagic REST API** to inspect builds and download

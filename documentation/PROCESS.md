@@ -184,8 +184,10 @@ swift Scripts/GenerateOpenAPIV1.swift
 
 ## 7. Next steps
 
-1. Validate `openapi-v1.generated.json` against live responses; tighten schemas via the patch.
-2. Wire swift-openapi-generator (runtime + urlsession transport) against `openapi-v1.generated.json`.
-3. Add the thin `URLSession` artifact-download helper (bypassing the generator).
+Task-level progress (achieved + pending) is tracked in
+[`roadmap/ROADMAP.md`](./roadmap/ROADMAP.md). The immediate next steps: validate the spec against
+live responses and tighten schemas via the patch, then wire swift-openapi-generator
+(runtime + urlsession transport) against `openapi-v1.generated.json` and add the thin `URLSession`
+artifact-download helper (bypassing the generator).
 
 [swift-openapi-generator]: https://github.com/apple/swift-openapi-generator
