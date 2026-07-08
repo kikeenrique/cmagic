@@ -71,6 +71,9 @@ All four verified live against the real token.
 - [x] `cmagic artifacts public-url [--app] [--branch] --name <substr> [--expires-in-hours N]` —
       verified live (URLSession-direct; slash-path not generator-safe)
 - [x] `cmagic caches list|delete [--app] [--cache-id]` — list verified live; delete implemented (202)
+- [x] `cmagic build logs <buildId> [--step N] [--raw]` — per-step logs via each step's `logUrl`
+      (URLSession-direct; system steps carry `logUrl`, script steps carry it on their subaction);
+      strips the `<span>` colour markup to plain text by default. Verified live.
 
 ## Phase 4 — Polish & distribution ⏳
 

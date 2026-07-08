@@ -82,7 +82,7 @@ struct Build: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "build",
         abstract: "Inspect and control a build.",
-        subcommands: [Show.self, Start.self, Cancel.self]
+        subcommands: [Show.self, Start.self, Cancel.self, Logs.self]
     )
 
     struct Show: AsyncParsableCommand {
@@ -176,6 +176,76 @@ struct Build: AsyncParsableCommand {
             }
         }
     }
+
+    struct Logs: AsyncParsableCommand {
+        static let configuration = CommandConfiguration(commandName: "logs", abstract: "Print a build's step logs.")
+
+        @Argument(help: "Build id.")
+        var buildId: String
+
+        @Option(name: [.short, .long], help: "Only this step (1-based, in the order `show --steps` lists).")
+        var step: Int?
+
+        @Flag(name: .long, help: "Keep the raw <span> markup instead of stripping it to plain text.")
+        var raw: Bool = false
+
+        func validate() throws {
+            if let step, step < 1 { throw ValidationError("--step is 1-based; pass a value >= 1.") }
+        }
+
+        func run() async throws {
+            let (_, cm) = try Session.loadConfigAndClient()
+            let actions = try await cm.build(id: buildId).buildActions ?? []
+            guard !actions.isEmpty else { throw ValidationError("build \(buildId) has no steps.") }
+
+            let selected: [(offset: Int, action: Codemagic.BuildAction)]
+            if let step {
+                guard step <= actions.count else {
+                    throw ValidationError("--step \(step) is out of range (build has \(actions.count) steps).")
+                }
+                selected = [(step - 1, actions[step - 1])]
+            } else {
+                selected = actions.enumerated().map { ($0.offset, $0.element) }
+            }
+
+            for (offset, action) in selected {
+                let header = "===== [\(offset + 1)/\(actions.count)] \(action.name ?? "step") (\(action.status ?? "?")) ====="
+                print(header)
+                let urls = stepLogURLs(action)
+                if urls.isEmpty { print("(no log for this step)"); continue }
+                for url in urls {
+                    let body = try await cm.stepLog(logUrl: url)
+                    print(raw ? body : stripSpanMarkup(body), terminator: body.hasSuffix("\n") ? "" : "\n")
+                }
+            }
+        }
+    }
+}
+
+/// A step's log URLs: its own `logUrl`, else its subactions' (script steps put the
+/// log on the single subaction). Recurses so nested subactions are covered.
+func stepLogURLs(_ action: Codemagic.BuildAction) -> [String] {
+    if let url = action.logUrl { return [url] }
+    return (action.subactions ?? []).flatMap(stepLogURLs)
+}
+
+/// Strip the inline `<span style="…">…</span>` colour markup the log endpoint
+/// emits, and unescape the few HTML entities it uses, leaving plain text.
+func stripSpanMarkup(_ s: String) -> String {
+    var out = ""
+    out.reserveCapacity(s.count)
+    var inTag = false
+    for ch in s {
+        if ch == "<" { inTag = true; continue }
+        if ch == ">" { inTag = false; continue }
+        if !inTag { out.append(ch) }
+    }
+    return out
+        .replacingOccurrences(of: "&lt;", with: "<")
+        .replacingOccurrences(of: "&gt;", with: ">")
+        .replacingOccurrences(of: "&quot;", with: "\"")
+        .replacingOccurrences(of: "&#39;", with: "'")
+        .replacingOccurrences(of: "&amp;", with: "&")
 }
 
 func bytesHuman(_ bytes: Int) -> String {

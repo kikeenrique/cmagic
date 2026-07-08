@@ -105,6 +105,17 @@ import Testing
     }
 
     @Test(.replay(stubs: [
+        .get("https://api.codemagic.io/builds/b1/step/s9", 200, ["Content-Type": "text/plain; charset=utf-8"], {
+            #"<span style="color:#268BD2">[build]</span> $ build\n"#
+        })
+    ]))
+    func fetchesStepLog() async throws {
+        let body = try await client().stepLog(logUrl: "https://api.codemagic.io/builds/b1/step/s9")
+        #expect(body.contains("[build]"))
+        #expect(body.contains("<span"))   // markup preserved by the fetch; the CLI strips it
+    }
+
+    @Test(.replay(stubs: [
         .get("https://api.codemagic.io/artifacts/a/b/app.zip", 200, ["Content-Type": "application/octet-stream"], { "PK-fake-bytes" })
     ]))
     func downloadsArtefactToFile() async throws {
