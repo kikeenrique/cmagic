@@ -85,12 +85,18 @@ All four verified live against the real token.
       via **Replay** synthetic stubs (no HAR, no private data). Replay is a test-only dependency.
 - [~] `README.md`: usage + `artifacts pull` example + `--json`/`jq` done; **install** section
       still pending (needs distribution below)
-- [ ] Distribute via `mise` (`spm:` backend or `ubi:` release binary) + a `mise run cmagic …` task
+- [x] Release automation — `mise/tasks/package` builds a universal (arm64+x86_64) binary via
+      per-arch `swift build` + `lipo` and writes `dist/cmagic-{aarch64,x86_64}-apple-darwin.tar.gz`
+      + `SHA256SUMS`; `mise/tasks/release <version>` tags + pushes. `.github/workflows/release.yml`
+      runs `mise run package` on a `0.*` tag and attaches the assets to the GitHub release.
+- [ ] Cut the first release (`mise run release 0.1.0`) so distribution assets exist
+- [ ] Distribute via Homebrew tap (`kikeenrique/homebrew-tap`, arch-aware formula) + `mise` `ubi:`
+      (both consume the release binary assets); optionally a `mise use ubi:kikeenrique/cmagic` task
 - [x] CI (build + test) on the standalone repo — GitHub Actions (`.github/workflows/ci.yml`),
       `swift build` + `swift test` on `macos-26`/Xcode 26.6, with SwiftPM caching
 
-Repo created (public, default branch `main`). Distribution targets `spm:<owner>/<repo>`
-(or `ubi:<owner>/<repo>` once releases exist).
+Repo created (public, default branch `main`). Distribution consumes prebuilt release assets:
+Homebrew (`brew install kikeenrique/tap/cmagic`) and `mise` (`ubi:kikeenrique/cmagic`).
 
 ## Authentication (decided)
 

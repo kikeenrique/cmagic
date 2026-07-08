@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+#MISE description="Build the universal (arm64+x86_64) release binary and write arch tarballs to dist/"
+#
+# Each slice is built separately: a single `swift build --arch A --arch B`
+# switches to the XCBuild backend, which can't resolve the OpenAPI build-tool
+# plugin. Per-arch native builds work; `lipo` fuses them into one universal binary.
+set -euo pipefail
+
+rm -rf dist && mkdir -p dist/bin
+swift build -c release --disable-sandbox --arch arm64
+swift build -c release --disable-sandbox --arch x86_64
+ARM="$(swift build -c release --disable-sandbox --arch arm64 --show-bin-path)"
+X86="$(swift build -c release --disable-sandbox --arch x86_64 --show-bin-path)"
+lipo -create -output dist/bin/cmagic "$ARM/cmagic" "$X86/cmagic"
+file dist/bin/cmagic
+
+# One universal binary, shipped under two target-triple names so `mise`/ubi
+# arch-matching resolves on both Apple Silicon and Intel; Homebrew picks per-arch.
+for triple in aarch64-apple-darwin x86_64-apple-darwin; do
+  tar -czf "dist/cmagic-$triple.tar.gz" -C dist/bin cmagic
+  shasum -a 256 "dist/cmagic-$triple.tar.gz" | tee -a dist/SHA256SUMS
+done
+ls -l dist

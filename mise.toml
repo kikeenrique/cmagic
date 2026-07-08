@@ -1,0 +1,14 @@
+# mise tasks for the cmagic CLI.
+# `package` and `release` are file tasks under mise/tasks/ — the release CI runs
+# the same `mise run package` so a human and CI build identical artifacts.
+
+[task_config]
+includes = ["mise/tasks"]
+
+[tasks.build]
+description = "Debug build"
+run = "swift build"
+
+[tasks.test]
+description = "Run tests"
+run = "swift test"

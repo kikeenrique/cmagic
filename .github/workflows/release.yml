@@ -1,0 +1,46 @@
+name: Release
+
+on:
+  push:
+    tags: ["[0-9]*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build & publish
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_26.6.app
+
+      - name: Install mise
+        uses: jdx/mise-action@v2
+
+      - name: Cache SwiftPM
+        uses: actions/cache@v6
+        with:
+          path: .build
+          # Release-scoped key (its .build holds release + per-arch products the
+          # debug CI cache lacks); restore-keys warm-start from CI's dependency cache.
+          key: ${{ runner.os }}-spm-release-${{ hashFiles('Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-release-
+            ${{ runner.os }}-spm-
+
+      - name: Package release binary
+        run: mise run package
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            dist/cmagic-aarch64-apple-darwin.tar.gz \
+            dist/cmagic-x86_64-apple-darwin.tar.gz \
+            dist/SHA256SUMS \
+            --title "$GITHUB_REF_NAME" \
+            --generate-notes
