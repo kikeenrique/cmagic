@@ -6,9 +6,10 @@ build's `TestResults-*.xcresult`) straight from the terminal. Codemagic ships no
 querying the service, so today the only remote-access route is raw `curl`; this package replaces
 that with a typed Swift client.
 
-> **Status: in progress.** The full command surface (apps, builds, build show/start/cancel,
-> artifacts pull/public-url, caches) is implemented and verified live, with `--json` output and an
-> offline test suite (~83% library coverage). Remaining: `mise`/CI distribution. See
+> **Status: in progress.** The full command surface (apps, builds, build show/start/cancel/logs,
+> `show --steps`, artifacts pull/public-url, caches) is implemented and verified live, with `--json`
+> output, a GitHub Actions CI build/test, and an offline test suite (~83% library coverage).
+> Remaining: `mise` distribution + a README install section. See
 > [`documentation/roadmap/ROADMAP.md`](documentation/roadmap/ROADMAP.md).
 
 ## Build, test, run
@@ -68,12 +69,13 @@ Sources/
     Configuration.swift          # CmagicConfig — loads token from the config file
     ArtefactDownloader.swift     # URLSession download of build.artefacts[].url
     PublicURL.swift              # URLSession-direct artefact public-url helper
+    StepLogs.swift               # URLSession-direct per-step build-log fetch
   cmagic/                        # executable (thin ArgumentParser front-end)
-    Cmagic.swift                 # root + apps/builds/build(show/start/cancel)
+    Cmagic.swift                 # root + apps/builds/build(show/start/cancel/logs)
     ArtifactsCommand.swift       # artifacts pull/public-url + unzip
     CachesCommand.swift          # caches list/delete
     OutputOptions.swift          # shared --json flag + emitter
-Tests/CodemagicApiKitTests/      # 21 offline tests (config, decoding, auth, Replay stubs)
+Tests/CodemagicApiKitTests/      # 23 offline tests (config, decoding, auth, Replay stubs)
 Scripts/
   GenerateOpenAPIV1.swift        # scrapes the v1 HTML docs → OpenAPI, merging a hand-authored patch
 documentation/

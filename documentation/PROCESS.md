@@ -129,7 +129,7 @@ real token** (read endpoints only; no build was triggered). Legend: ✅ confirme
 | `POST /builds/:id/cancel`, `208` when already finished | builds.html |
 | Artifact URL form `/artifacts/<build-id>/<artifact-id>/<filename>` | real example in artifacts.html |
 | `POST /artifacts/:secureFilename/public-url` body `{expiresAt}` → `{url, expiresAt}` | artifacts.html |
-| No documented raw-log endpoint | no `…/logs` path in any v1 page |
+| No documented raw-log endpoint, but each build step exposes a `logUrl` (`…/builds/:id/step/:stepId`, `text/plain` with inline `<span>` colour markup) | no `…/logs` path in any v1 page; `logUrl` seen in the live `GET /builds/:id` response |
 | Caches: `GET`/`DELETE /apps/:id/caches`, `DELETE …/:cacheId` | caches.html |
 | No official CLI queries builds/artifacts (codemagic-cli-tools = build/deploy only) | cli-tools README |
 | v1 "transitioning to our new API" banner | codemagic-rest-api.html |
@@ -139,6 +139,7 @@ real token** (read endpoints only; no build was triggered). Legend: ✅ confirme
 | **`GET /builds?appId=<id>` works (200)** → `{applications[], builds[], nextPageUrl}` (cursor paging, 30/page) | live call |
 | **`GET /builds/:id` works (200)** → `{application, build}` | live call |
 | Build id field is `_id` (24-char ObjectId), not `id`; `status` ∈ {finished, failed, canceled, timeout, …} | live call |
+| **`GET /builds/:id` returns a `buildActions[]` array** (ordered steps; a 16-step build seen live). Each step: `name`,`type`,`status`,`startedAt`,`finishedAt`,`logUrl`,`subactions[]`. System steps carry `logUrl` directly; script steps carry it on their single subaction (which also has a `command`). Modeled as `BuildAction` in `openapi-v1.patch.json` | live call |
 
 ### ⚠️ Corrected
 
@@ -192,9 +193,10 @@ swift Scripts/GenerateOpenAPIV1.swift
 ## 7. Next steps
 
 Task-level progress (achieved + pending) is tracked in
-[`roadmap/ROADMAP.md`](./roadmap/ROADMAP.md). The immediate next steps: validate the spec against
-live responses and tighten schemas via the patch, then wire swift-openapi-generator
-(runtime + urlsession transport) against `openapi-v1.generated.json` and add the thin `URLSession`
-artifact-download helper (bypassing the generator).
+[`roadmap/ROADMAP.md`](./roadmap/ROADMAP.md). The spec is now validated against live responses and
+the swift-openapi-generator client (plus the `URLSession`-direct download / public-url / step-log
+helpers) is wired and shipping the full command surface, with GitHub Actions CI running build +
+test. Remaining work — `mise` distribution and a README install section — is tracked in the
+roadmap.
 
 [swift-openapi-generator]: https://github.com/apple/swift-openapi-generator

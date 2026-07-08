@@ -9,11 +9,12 @@ Legend: ✅ done · ⏳ pending · 🔑 blocked on a live `CM_TOKEN`.
 ## Status (July 2026)
 
 **Phases 0–3 complete; Phase 4 in progress.** The `cmagic` CLI implements the full command surface
-— `apps`, `builds`, `build show/start/cancel`, `artifacts pull/public-url`, `caches list/delete` —
-each with `--json` output, all verified live against a real token (except `build start`, which
-would trigger a real build). The `CodemagicApiKit` library wraps a swift-openapi-generator client
-(auth middleware + config-file token + artefact downloader). 21 offline tests, ~83% library line
-coverage (networked paths stubbed with Replay).
+— `apps`, `builds`, `build show`/`show --steps`/`start`/`cancel`/`logs`, `artifacts pull/public-url`,
+`caches list/delete` — each with `--json` output, all verified live against a real token (except
+`build start`, which would trigger a real build). The `CodemagicApiKit` library wraps a
+swift-openapi-generator client (auth middleware + config-file token + artefact downloader). GitHub
+Actions CI runs build + test. 23 offline tests, ~83% library line coverage (networked paths stubbed
+with Replay).
 
 **Remaining:** a README install section and `mise` distribution — both in Phase 4 below. CI is done.
 
@@ -78,10 +79,10 @@ All four verified live against the real token.
 ## Phase 4 — Polish & distribution ⏳
 
 - [x] `--json` output mode for every command (pipeable into `jq`; verified live)
-- [x] Tests (21, all offline; ~83% line coverage of CodemagicApiKit): config parsing + `load()`
-      errors, model decoding, `AuthMiddleware`, and the full networked layer (apps/builds/build/
-      caches/cancel+208/start/public-url/download) via **Replay** synthetic stubs (no HAR, no
-      private data). Replay is a test-only dependency.
+- [x] Tests (23, all offline; ~83% line coverage of CodemagicApiKit): config parsing + `load()`
+      errors, model decoding (incl. `BuildAction` steps + subactions), `AuthMiddleware`, and the
+      full networked layer (apps/builds/build/caches/cancel+208/start/public-url/download/step-log)
+      via **Replay** synthetic stubs (no HAR, no private data). Replay is a test-only dependency.
 - [~] `README.md`: usage + `artifacts pull` example + `--json`/`jq` done; **install** section
       still pending (needs distribution below)
 - [ ] Distribute via `mise` (`spm:` backend or `ubi:` release binary) + a `mise run cmagic …` task
