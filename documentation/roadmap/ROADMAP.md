@@ -40,13 +40,16 @@ Verified live against a real token (July 2026, read endpoints only). See PROCESS
 - [x] Hand-written `URLSession` artefact-download helper (`ArtefactDownloader`; fetch `build.artefacts[].url` directly)
 - [x] Verified end-to-end: `cmagic apps` lists apps live through the generated client
 
-## Phase 2 — Core commands ⏳
+## Phase 2 — Core commands ✅
 
-- [x] `cmagic apps` — list apps → `_id` (smoke test; done in Phase 1)
-- [ ] `cmagic builds --app <id> [--branch <b>] [--limit N]`
-- [ ] `cmagic build <buildId>` — one build's detail
-- [ ] `cmagic artifacts pull --branch <b> --name <artifact> -o <dir>` — the core one-liner
-      (resolve latest build for branch → match artifact by name → download → auto-unzip `.xcresult`/`.zip`)
+- [x] `cmagic apps` — list apps → `_id`
+- [x] `cmagic builds --app <id> [--branch <b>] [--limit N]` (branch/limit are client-side — the v1
+      API only filters by `appId`; first page only for now)
+- [x] `cmagic build <buildId>` — one build's detail (incl. artefacts + human sizes)
+- [x] `cmagic artifacts pull [--app <id>] [--branch <b>] --name <substr> [-o <dir>]` — the core
+      one-liner (latest build for branch → match artefact by name → download → auto-unzip zip/xcresult)
+
+All four verified live against the real token.
 
 ## Phase 3 — Write ops & remaining surface ⏳
 

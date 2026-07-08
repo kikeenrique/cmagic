@@ -6,17 +6,33 @@ build's `TestResults-*.xcresult`) straight from the terminal. Codemagic ships no
 querying the service, so today the only remote-access route is raw `curl`; this package replaces
 that with a typed Swift client.
 
-> **Status: in progress.** API research, OpenAPI specs, and the package (generated client + auth +
-> config + artefact downloader) are done; `cmagic apps` works end-to-end. Core commands are next.
-> See [`documentation/roadmap/ROADMAP.md`](documentation/roadmap/ROADMAP.md).
+> **Status: in progress.** API research, OpenAPI specs, the package (generated client + auth +
+> config + artefact downloader), and the core read commands are done and verified live. Write ops
+> (start/cancel), caches, and `--json` are next. See
+> [`documentation/roadmap/ROADMAP.md`](documentation/roadmap/ROADMAP.md).
 
 ## Build, test, run
 
 ```bash
 swift build
 swift test
-swift run cmagic apps        # reads the token from the config file (see Authentication)
 ```
+
+## Usage
+
+The token is read from the config file (see [Authentication](#authentication)).
+
+```bash
+cmagic apps                                   # list apps: <id>  <name>
+cmagic builds --app <id> --limit 10           # recent builds (add --branch <b> to filter)
+cmagic build <buildId>                         # one build's detail + artefacts
+
+# the flagship: pull the latest build's artefact for a branch, auto-unzipping zip/xcresult
+cmagic artifacts pull --app <id> --branch main --name TestResults -o ./out
+```
+
+`--app` and `--branch` fall back to `app`/`branch` in the config file if set. Run any command with
+`--help` for options.
 
 ## Approach
 

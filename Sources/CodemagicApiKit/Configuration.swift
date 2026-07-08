@@ -21,9 +21,15 @@ public enum CodemagicError: Error, CustomStringConvertible, Sendable {
 /// `~/.config/cmagic/config.toml`. Format: `token = "cm_…"`.
 public struct CmagicConfig: Sendable {
     public var token: String
+    /// Optional default application id (`app = "…"`), used when `--app` is omitted.
+    public var app: String?
+    /// Optional default branch (`branch = "…"`), used when `--branch` is omitted.
+    public var branch: String?
 
-    public init(token: String) {
+    public init(token: String, app: String? = nil, branch: String? = nil) {
         self.token = token
+        self.app = app
+        self.branch = branch
     }
 
     /// The resolved config-file path (honours `XDG_CONFIG_HOME`).
@@ -47,7 +53,11 @@ public struct CmagicConfig: Sendable {
         guard let token = parseValue(for: "token", in: contents), !token.isEmpty else {
             throw CodemagicError.tokenMissing(path: path)
         }
-        return CmagicConfig(token: token)
+        return CmagicConfig(
+            token: token,
+            app: parseValue(for: "app", in: contents).flatMap { $0.isEmpty ? nil : $0 },
+            branch: parseValue(for: "branch", in: contents).flatMap { $0.isEmpty ? nil : $0 }
+        )
     }
 
     // MARK: - Minimal TOML
