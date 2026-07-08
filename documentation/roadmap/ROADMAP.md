@@ -15,7 +15,7 @@ would trigger a real build). The `CodemagicApiKit` library wraps a swift-openapi
 (auth middleware + config-file token + artefact downloader). 21 offline tests, ~83% library line
 coverage (networked paths stubbed with Replay).
 
-**Remaining:** a README install section, `mise` distribution, and CI — all in Phase 4 below.
+**Remaining:** a README install section and `mise` distribution — both in Phase 4 below. CI is done.
 
 ## Phase 0 — Research & API specs ✅
 
@@ -81,7 +81,8 @@ All four verified live against the real token.
 - [~] `README.md`: usage + `artifacts pull` example + `--json`/`jq` done; **install** section
       still pending (needs distribution below)
 - [ ] Distribute via `mise` (`spm:` backend or `ubi:` release binary) + a `mise run cmagic …` task
-- [ ] CI (build + test) on the standalone repo
+- [x] CI (build + test) on the standalone repo — GitHub Actions (`.github/workflows/ci.yml`),
+      `swift build` + `swift test` on `macos-26`/Xcode 26.6, with SwiftPM caching
 
 Repo created (public, default branch `main`). Distribution targets `spm:<owner>/<repo>`
 (or `ubi:<owner>/<repo>` once releases exist).
