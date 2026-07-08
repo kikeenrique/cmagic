@@ -63,7 +63,8 @@ All four verified live against the real token.
 ## Phase 4 — Polish & distribution ⏳
 
 - [ ] `--json` output mode for every command (pipeable into `jq`)
-- [~] Tests: `CmagicConfig` TOML parsing covered; decode-fixture tests still pending
+- [x] Tests (12): `CmagicConfig` parsing + `load()` error paths, model decoding (Application/Build/
+      Artefact/Cache incl. null handling), and `AuthMiddleware` header injection — all offline
 - [ ] `README.md` with install + `artifacts pull` example
 - [ ] Distribute via `mise` (`spm:` backend or `ubi:` release binary) + a `mise run cmagic …` task
 - [ ] CI (build + test) on the standalone repo
