@@ -1,6 +1,6 @@
 # Codemagic Swift CLI
 
-A Swift **library (`CodemagicKit`)** + thin **executable (`codemagic`)** for the
+A Swift **library (`CodemagicApiKit`)** + thin **executable (`cmagic`)** for the
 [Codemagic](https://codemagic.io) REST API — inspect builds and pull their artifacts (e.g. a red
 build's `TestResults-*.xcresult`) straight from the terminal. Codemagic ships no official CLI for
 querying the service, so today the only remote-access route is raw `curl`; this package replaces
@@ -55,7 +55,15 @@ To change the v1 spec, edit the docs (re-scrape) or `documentation/openapi-v1.pa
 ## Authentication
 
 Every request uses the header `x-auth-token: <token>` (generate it in the Codemagic UI under
-Account settings / Integrations → API token). The CLI will read it with precedence
-`--token` > `CM_TOKEN` env > config file, and never log it.
+Account settings / Integrations → API token). The token is read from a **config file only**:
+
+- **Path:** `$XDG_CONFIG_HOME/cmagic/config.toml`, falling back to
+  `~/.config/cmagic/config.toml`
+- **Format (TOML):** `token = "cm_xxxxxxxx"`
+- Keep it `chmod 600`; the CLI warns if it is group/world-readable, fails clearly when absent, and
+  never logs the token.
+
+There is intentionally no `--token` flag or `CM_TOKEN` env var (see
+[`documentation/roadmap/ROADMAP.md`](documentation/roadmap/ROADMAP.md#authentication-decided)).
 
 [swift-openapi-generator]: https://github.com/apple/swift-openapi-generator
