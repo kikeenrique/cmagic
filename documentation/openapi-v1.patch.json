@@ -1,5 +1,6 @@
 {
   "_comment": "Hand-authored overlay merged into the docs-scraped base by Scripts/GenerateOpenAPIV1.swift (deep merge, patch wins on leaves). Holds what the v1 HTML docs omit: the undocumented-but-real build read endpoints and the shared response schemas. Do not edit the generated output directly — edit this file.",
+  "_unverified": "GET /builds, GET /builds/:id, the ?appId= filter, and the Build/Artifact field names are NOT in the v1 docs — sourced from roadmap/codemagic-swift-cli-brief.md and not yet confirmed against a live token. See PROCESS.md section 5.",
   "paths": {
     "/builds": {
       "get": {

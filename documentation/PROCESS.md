@@ -112,21 +112,61 @@ to swift-openapi-generator.
 `openapi-v1.patch.json` (enrichment), then re-run the script. Re-scraping is also how we detect
 when Codemagic's docs drift.
 
-## 5. Known caveats
+## 5. Verification (July 2026)
 
-- **Response fidelity.** The v1 docs don't specify response schemas, so scraped responses are
-  open objects (`additionalProperties: true`). Tighten via the patch or against live `curl`
-  samples with a real `CM_TOKEN`.
-- **Undocumented reads.** `GET /builds` and `GET /builds/:id` are not in the v1 docs, so the
-  scraper cannot emit them — they come from `openapi-v1.patch.json`. Provenance: they are listed
-  (and marked "verified July 2026") in the original handoff brief
-  (`documentation/roadmap/codemagic-swift-cli-brief.md` §3) and used in its reference `curl`
-  flow. They have **not** yet been re-verified here against a live token.
+Every factual claim in this doc and in `roadmap/codemagic-swift-cli-brief.md` was audited against
+primary sources: the downloaded v1 docs (`v1-api-docs/*.html`), the extracted v3 spec
+(`openapi-v3.json`), and the codemagic-cli-tools repo. Legend: ✅ confirmed · ⚠️ corrected /
+assumption · 🔑 needs a live `CM_TOKEN`.
+
+### ✅ Confirmed
+
+| Claim | Evidence |
+|---|---|
+| v1 base URL `https://api.codemagic.io`; auth header `x-auth-token` | curl examples throughout v1 docs (12× `x-auth-token`) |
+| v1 token location "Account settings > API token" | applications overview |
+| `POST /builds` params: `appId`,`workflowId` required; `branch`/`tag` (one required); `environment`,`labels` optional | builds.html table |
+| `POST /builds/:id/cancel`, `208` when already finished | builds.html |
+| Artifact URL form `/artifacts/<build-id>/<artifact-id>/<filename>` | real example in artifacts.html |
+| `POST /artifacts/:secureFilename/public-url` body `{expiresAt}` → `{url, expiresAt}` | artifacts.html |
+| No documented raw-log endpoint | no `…/logs` path in any v1 page |
+| Caches: `GET`/`DELETE /apps/:id/caches`, `DELETE …/:cacheId` | caches.html |
+| No official CLI queries builds/artifacts (codemagic-cli-tools = build/deploy only) | cli-tools README |
+| v1 "transitioning to our new API" banner | codemagic-rest-api.html |
+| v3: OpenAPI 3.1.0, 64 paths, 212 schemas, base `/api/v3`, `x-auth-token`; no trigger/cancel/artifacts route; artifacts via `short_lived_download_url`; builds at `/teams/{team_id}/builds` with `app_id,status,workflow_id,branch,tag,label` filters + cursor paging | openapi-v3.json |
+
+### ⚠️ Corrected / assumptions
+
+- **Builds & Applications APIs are "preview".** The v1 docs state they are "available for
+  developers to preview … may change without advance notice." Treat the build/app surface as
+  unstable and pin behaviour with tests. (Neither the brief nor earlier drafts noted this.)
+- **`GET /builds` and `GET /builds/:id` are not in the v1 docs at all** — no such section exists.
+  They come from `openapi-v1.patch.json`, sourced from the handoff brief (§3), and are **not**
+  re-verified. The `?appId=` filter is a guess — `appId` is documented only as the `POST /builds`
+  body param, never as a query filter.
+- **`instanceType` is not documented.** The brief lists it as an optional `POST /builds` param but
+  it is absent from the documented table; kept out of the spec pending a live check.
+- **`public-url` `expiresAt` type asymmetry** — integer (UNIX seconds) in the request, ISO-8601
+  string in the response.
+- **v1 docs are partly stale** — the artifacts page was last updated 2023-03-14 (others May/June 2026).
+
+### 🔑 Needs a live token
+
+Response-shape and behavioural claims that only an API call can confirm: `GET /apps` shape
+(`applications[]` with `_id`/`appName`/`workflowIds`/`workflows`), `GET /apps/:id` `branches[]`,
+whether the two build GETs exist and their shape, whether `?appId=` filters, v1 build field names
+(`_id` vs `id`, `artifacts[].{url,name,type}`, `status` values), whether `POST /builds` accepts
+`instanceType`, and that auth/base URL behave as documented. Until these pass, the `Build`/
+`Artifact` schemas stay loose (`additionalProperties: true`).
+
+### Design caveats (not corrections)
+
+- **Response fidelity.** The v1 docs don't specify response schemas, so scraped responses are open
+  objects (`additionalProperties: true`); tighten via the patch or live `curl` samples.
 - **Artifact path parameter.** `secureFilename` is itself a multi-segment path
   (`<build-id>/<artifact-id>/<file>`). OpenAPI path params can't span `/` and the generator
   percent-encodes them, so the `/artifacts/...` operations are **not** generator-safe. Download by
   fetching the artifact URL (from `build.artifacts[].url`) directly with `URLSession`.
-- **Query params for `GET /builds`.** Not documented; confirm empirically (branch? limit?).
 
 ## 6. Regenerating everything
 
