@@ -1,5 +1,5 @@
 {
-  "originHash" : "9ee1d424bc09dbd6311d9e720beafe72e777aab14b75457ae092d74aa6874dd0",
+  "originHash" : "95ecc87931b58f2043ec3568fc635f4e6e31522f803528ecdc216a71fcc6ed9a",
   "pins" : [
     {
       "identity" : "openapikit",
@@ -8,6 +8,15 @@
       "state" : {
         "revision" : "57b6318128e3f901c93f4fbf98d1c1464ec168d3",
         "version" : "6.2.0"
+      }
+    },
+    {
+      "identity" : "replay",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/mattt/Replay.git",
+      "state" : {
+        "revision" : "f641f9c06a4a01c73342aa0879a860591b608418",
+        "version" : "0.4.0"
       }
     },
     {

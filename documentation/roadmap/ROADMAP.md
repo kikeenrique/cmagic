@@ -63,8 +63,10 @@ All four verified live against the real token.
 ## Phase 4 — Polish & distribution ⏳
 
 - [ ] `--json` output mode for every command (pipeable into `jq`)
-- [x] Tests (12): `CmagicConfig` parsing + `load()` error paths, model decoding (Application/Build/
-      Artefact/Cache incl. null handling), and `AuthMiddleware` header injection — all offline
+- [x] Tests (21, all offline; ~83% line coverage of CodemagicApiKit): config parsing + `load()`
+      errors, model decoding, `AuthMiddleware`, and the full networked layer (apps/builds/build/
+      caches/cancel+208/start/public-url/download) via **Replay** synthetic stubs (no HAR, no
+      private data). Replay is a test-only dependency.
 - [ ] `README.md` with install + `artifacts pull` example
 - [ ] Distribute via `mise` (`spm:` backend or `ubi:` release binary) + a `mise run cmagic …` task
 - [ ] CI (build + test) on the standalone repo
