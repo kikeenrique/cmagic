@@ -30,18 +30,19 @@ Verified live against a real token (July 2026, read endpoints only). See PROCESS
 - [x] Tighten the `Build`/`Artefact` schemas in `openapi-v1.patch.json` from real responses
 - [ ] Confirm `POST /builds` accepts `instanceType` (deferred — would trigger a real build)
 
-## Phase 1 — Package scaffolding & generated client ⏳
+## Phase 1 — Package scaffolding & generated client ✅
 
-- [ ] `Package.swift`: package `cmagic` — `.library("CodemagicApiKit")` + `.executable("cmagic")`
-- [ ] Add deps: `swift-openapi-generator` (plugin), `swift-openapi-runtime`, `swift-openapi-urlsession`
-- [ ] Wire the generator against `documentation/openapi-v1.generated.json`
-- [ ] `x-auth-token` injection middleware
-- [ ] **Token from config file only** (see [Authentication](#authentication-decided) below)
-- [ ] Hand-written `URLSession` artefact-download helper (fetch `build.artefacts[].url` directly; bypasses the generator's `/`-in-path limit)
+- [x] `Package.swift`: package `cmagic` — `.library("CodemagicApiKit")` + `.executable("cmagic")`
+- [x] Add deps: `swift-openapi-generator` (plugin), `swift-openapi-runtime`, `swift-openapi-urlsession`, `swift-argument-parser`
+- [x] Wire the generator against `Sources/CodemagicApiKit/openapi.json` (a copy of `documentation/openapi-v1.generated.json`); Artifacts tag filtered out
+- [x] `x-auth-token` injection middleware (`AuthMiddleware`)
+- [x] **Token from config file only** (`CmagicConfig`, see [Authentication](#authentication-decided) below)
+- [x] Hand-written `URLSession` artefact-download helper (`ArtefactDownloader`; fetch `build.artefacts[].url` directly)
+- [x] Verified end-to-end: `cmagic apps` lists apps live through the generated client
 
 ## Phase 2 — Core commands ⏳
 
-- [ ] `cmagic apps` — list apps → `_id`
+- [x] `cmagic apps` — list apps → `_id` (smoke test; done in Phase 1)
 - [ ] `cmagic builds --app <id> [--branch <b>] [--limit N]`
 - [ ] `cmagic build <buildId>` — one build's detail
 - [ ] `cmagic artifacts pull --branch <b> --name <artifact> -o <dir>` — the core one-liner
@@ -57,7 +58,7 @@ Verified live against a real token (July 2026, read endpoints only). See PROCESS
 ## Phase 4 — Polish & distribution ⏳
 
 - [ ] `--json` output mode for every command (pipeable into `jq`)
-- [ ] Tests: decode models against recorded JSON fixtures (no live network)
+- [~] Tests: `CmagicConfig` TOML parsing covered; decode-fixture tests still pending
 - [ ] `README.md` with install + `artifacts pull` example
 - [ ] Distribute via `mise` (`spm:` backend or `ubi:` release binary) + a `mise run cmagic …` task
 - [ ] CI (build + test) on the standalone repo

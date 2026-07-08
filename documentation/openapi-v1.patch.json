@@ -2,6 +2,43 @@
   "_comment": "Hand-authored overlay merged into the docs-scraped base by Scripts/GenerateOpenAPIV1.swift (deep merge, patch wins on leaves). Holds what the v1 HTML docs omit: the undocumented build read endpoints and the shared response schemas. Do not edit the generated output directly — edit this file.",
   "_verified": "GET /builds, GET /builds/:id, GET /apps, GET /apps/:id and the ?appId= filter were confirmed against the live API (July 2026, HTTP 200). Field names/shapes below are from real responses. NOTE: the build's artifact array is spelled 'artefacts' (British) and each entry's byte size is 'size' (not 'size_in_bytes'). See PROCESS.md section 5.",
   "paths": {
+    "/apps": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "applications": { "type": "array", "items": { "$ref": "#/components/schemas/Application" } },
+                    "builds": { "type": "array", "items": { "$ref": "#/components/schemas/Build" } }
+                  },
+                  "required": ["applications"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/apps/{id}": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "application": { "$ref": "#/components/schemas/Application" }
+                  },
+                  "required": ["application"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/builds": {
       "get": {
         "tags": ["Builds"],
@@ -62,6 +99,20 @@
   },
   "components": {
     "schemas": {
+      "Application": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "_id": { "type": "string" },
+          "appName": { "type": "string" },
+          "workflowIds": { "type": "array", "items": { "type": "string" } },
+          "branches": { "type": "array", "items": { "type": "string" } },
+          "projectType": { "type": ["string", "null"] },
+          "lastBuildId": { "type": ["string", "null"] },
+          "iconUrl": { "type": ["string", "null"] }
+        },
+        "required": ["_id"]
+      },
       "Build": {
         "type": "object",
         "additionalProperties": true,

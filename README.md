@@ -6,9 +6,17 @@ build's `TestResults-*.xcresult`) straight from the terminal. Codemagic ships no
 querying the service, so today the only remote-access route is raw `curl`; this package replaces
 that with a typed Swift client.
 
-> **Status: early.** API research and the OpenAPI specs are done; the Swift package is not yet
-> scaffolded. See [`documentation/roadmap/ROADMAP.md`](documentation/roadmap/ROADMAP.md) for what's
-> done and what's next.
+> **Status: in progress.** API research, OpenAPI specs, and the package (generated client + auth +
+> config + artefact downloader) are done; `cmagic apps` works end-to-end. Core commands are next.
+> See [`documentation/roadmap/ROADMAP.md`](documentation/roadmap/ROADMAP.md).
+
+## Build, test, run
+
+```bash
+swift build
+swift test
+swift run cmagic apps        # reads the token from the config file (see Authentication)
+```
 
 ## Approach
 
@@ -21,6 +29,17 @@ spec is kept for reference.
 ## Repository layout
 
 ```
+Package.swift
+Sources/
+  CodemagicApiKit/               # library: generated OpenAPI client + auth + config + artefact download
+    openapi.json                 # spec fed to the generator (copy of documentation/openapi-v1.generated.json)
+    openapi-generator-config.yaml
+    Codemagic.swift              # client wrapper (base URL + auth middleware)
+    AuthMiddleware.swift         # injects x-auth-token
+    Configuration.swift          # CmagicConfig — loads token from the config file
+    ArtefactDownloader.swift     # URLSession download of build.artefacts[].url
+  cmagic/                        # executable (thin ArgumentParser front-end)
+Tests/CodemagicApiKitTests/
 Scripts/
   GenerateOpenAPIV1.swift        # scrapes the v1 HTML docs → OpenAPI, merging a hand-authored patch
 documentation/

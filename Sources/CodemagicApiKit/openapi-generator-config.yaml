@@ -1,0 +1,15 @@
+# swift-openapi-generator configuration.
+# The spec (openapi.json) is a copy of documentation/openapi-v1.generated.json —
+# regenerate that with Scripts/GenerateOpenAPIV1.swift, then copy it here.
+generate:
+  - types
+  - client
+accessModifier: public
+# Skip the Artifacts operations: their `secureFilename` path param spans "/",
+# which the generator percent-encodes and the server won't route. Artefacts are
+# downloaded via ArtefactDownloader (plain URLSession) using build.artefacts[].url.
+filter:
+  tags:
+    - Applications
+    - Builds
+    - Caches
