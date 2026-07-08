@@ -116,8 +116,8 @@ when Codemagic's docs drift.
 
 Every factual claim in this doc and in `roadmap/codemagic-swift-cli-brief.md` was audited against
 primary sources: the downloaded v1 docs (`v1-api-docs/*.html`), the extracted v3 spec
-(`openapi-v3.json`), and the codemagic-cli-tools repo. Legend: ✅ confirmed · ⚠️ corrected /
-assumption · 🔑 needs a live `CM_TOKEN`.
+(`openapi-v3.json`), the codemagic-cli-tools repo, and — as of July 2026 — **live API calls with a
+real token** (read endpoints only; no build was triggered). Legend: ✅ confirmed · ⚠️ corrected.
 
 ### ✅ Confirmed
 
@@ -134,39 +134,46 @@ assumption · 🔑 needs a live `CM_TOKEN`.
 | No official CLI queries builds/artifacts (codemagic-cli-tools = build/deploy only) | cli-tools README |
 | v1 "transitioning to our new API" banner | codemagic-rest-api.html |
 | v3: OpenAPI 3.1.0, 64 paths, 212 schemas, base `/api/v3`, `x-auth-token`; no trigger/cancel/artifacts route; artifacts via `short_lived_download_url`; builds at `/teams/{team_id}/builds` with `app_id,status,workflow_id,branch,tag,label` filters + cursor paging | openapi-v3.json |
+| **`GET /apps` works (200)** → `{applications[], builds[]}`; app has `_id`,`appName`,`workflowIds`,`branches` | live call |
+| **`GET /apps/:id` works (200)** → `{application}` incl. `branches[]` | live call |
+| **`GET /builds?appId=<id>` works (200)** → `{applications[], builds[], nextPageUrl}` (cursor paging, 30/page) | live call |
+| **`GET /builds/:id` works (200)** → `{application, build}` | live call |
+| Build id field is `_id` (24-char ObjectId), not `id`; `status` ∈ {finished, failed, canceled, timeout, …} | live call |
 
-### ⚠️ Corrected / assumptions
+### ⚠️ Corrected
 
+- **The build's artifact array is spelled `artefacts` (British), not `artifacts`.** This is the big
+  one — the brief and earlier drafts used `artifacts`. Each entry has `name`, `type`, `url` (full
+  authenticated download URL), `path` (the `<build-id>/<artifact-id>/<file>` secureFilename), and
+  **`size`** in bytes (not `size_in_bytes`, which is a v3 thing), plus optional
+  `version*`/`supportedPlatforms`/`minOsVersion`. Fixed in `openapi-v1.patch.json`.
+- **`GET /builds` / `GET /builds/:id` and the `?appId=` filter are real** — undocumented in the v1
+  HTML but confirmed live (200). `GET /builds` is cursor-paginated via `nextPageUrl`. `appId` works
+  as a query filter even though the docs only mention it as the `POST /builds` body param.
+- **`workflowId` is `null` when a build uses `codemagic.yaml`** — the yaml workflow id lives in
+  `fileWorkflowId` instead.
+- **`instanceType` is a real field on the build object** (so the brief wasn't wrong that it exists).
+  Still **unconfirmed** whether `POST /builds` accepts it as *input* — not tested, since that would
+  trigger a real build. Kept out of the request body for now.
 - **Builds & Applications APIs are "preview".** The v1 docs state they are "available for
-  developers to preview … may change without advance notice." Treat the build/app surface as
-  unstable and pin behaviour with tests. (Neither the brief nor earlier drafts noted this.)
-- **`GET /builds` and `GET /builds/:id` are not in the v1 docs at all** — no such section exists.
-  They come from `openapi-v1.patch.json`, sourced from the handoff brief (§3), and are **not**
-  re-verified. The `?appId=` filter is a guess — `appId` is documented only as the `POST /builds`
-  body param, never as a query filter.
-- **`instanceType` is not documented.** The brief lists it as an optional `POST /builds` param but
-  it is absent from the documented table; kept out of the spec pending a live check.
+  developers to preview … may change without advance notice." Treat as unstable; pin with tests.
 - **`public-url` `expiresAt` type asymmetry** — integer (UNIX seconds) in the request, ISO-8601
   string in the response.
 - **v1 docs are partly stale** — the artifacts page was last updated 2023-03-14 (others May/June 2026).
 
-### 🔑 Needs a live token
+### Still not verified
 
-Response-shape and behavioural claims that only an API call can confirm: `GET /apps` shape
-(`applications[]` with `_id`/`appName`/`workflowIds`/`workflows`), `GET /apps/:id` `branches[]`,
-whether the two build GETs exist and their shape, whether `?appId=` filters, v1 build field names
-(`_id` vs `id`, `artifacts[].{url,name,type}`, `status` values), whether `POST /builds` accepts
-`instanceType`, and that auth/base URL behave as documented. Until these pass, the `Build`/
-`Artifact` schemas stay loose (`additionalProperties: true`).
+- Whether `POST /builds` accepts `instanceType` / the exact success body of `POST /builds` and
+  `POST /builds/:id/cancel` (would trigger/mutate real builds — deferred to integration tests).
 
 ### Design caveats (not corrections)
 
-- **Response fidelity.** The v1 docs don't specify response schemas, so scraped responses are open
-  objects (`additionalProperties: true`); tighten via the patch or live `curl` samples.
+- **Response fidelity.** The v1 docs don't specify response schemas; the `Build`/`Artefact` schemas
+  are now populated from live responses but keep `additionalProperties: true` for forward-compat.
 - **Artifact path parameter.** `secureFilename` is itself a multi-segment path
   (`<build-id>/<artifact-id>/<file>`). OpenAPI path params can't span `/` and the generator
   percent-encodes them, so the `/artifacts/...` operations are **not** generator-safe. Download by
-  fetching the artifact URL (from `build.artifacts[].url`) directly with `URLSession`.
+  fetching the artefact URL (from `build.artefacts[].url`) directly with `URLSession`.
 
 ## 6. Regenerating everything
 

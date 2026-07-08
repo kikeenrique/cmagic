@@ -20,15 +20,15 @@ Legend: ✅ done · ⏳ pending · 🔑 blocked on a live `CM_TOKEN`.
 - [x] Document the pipeline → `PROCESS.md`
 - [x] Audit every claim against sources; fix assumptions (PROCESS.md §5)
 
-## Phase 0.5 — Close verification gaps 🔑
+## Phase 0.5 — Close verification gaps ✅
 
-Blocked on a live `CM_TOKEN`. See PROCESS.md §5 "🔑 Needs a live token".
+Verified live against a real token (July 2026, read endpoints only). See PROCESS.md §5.
 
-- [ ] Confirm `GET /apps` / `GET /apps/:id` response shapes
-- [ ] Confirm `GET /builds` and `GET /builds/:id` exist and their shape; whether `?appId=` filters
-- [ ] Confirm v1 build field names (`_id` vs `id`, `artifacts[].{url,name,type}`, `status` values)
-- [ ] Confirm `POST /builds` accepts `instanceType`
-- [ ] Tighten the `Build`/`Artifact` schemas in `openapi-v1.patch.json` from real responses
+- [x] Confirm `GET /apps` / `GET /apps/:id` response shapes (200; `_id`,`appName`,`workflowIds`,`branches`)
+- [x] Confirm `GET /builds` and `GET /builds/:id` exist and their shape; `?appId=` filters (all 200; `nextPageUrl` paging)
+- [x] Confirm v1 build field names (`_id` not `id`; artifact array is **`artefacts`**; `status` ∈ finished/failed/canceled/timeout)
+- [x] Tighten the `Build`/`Artefact` schemas in `openapi-v1.patch.json` from real responses
+- [ ] Confirm `POST /builds` accepts `instanceType` (deferred — would trigger a real build)
 
 ## Phase 1 — Package scaffolding & generated client ⏳
 
@@ -37,7 +37,7 @@ Blocked on a live `CM_TOKEN`. See PROCESS.md §5 "🔑 Needs a live token".
 - [ ] Wire the generator against `documentation/openapi-v1.generated.json`
 - [ ] `x-auth-token` injection middleware
 - [ ] **Token from config file only** (see [Authentication](#authentication-decided) below)
-- [ ] Hand-written `URLSession` artifact-download helper (bypasses the generator's `/`-in-path limit)
+- [ ] Hand-written `URLSession` artefact-download helper (fetch `build.artefacts[].url` directly; bypasses the generator's `/`-in-path limit)
 
 ## Phase 2 — Core commands ⏳
 

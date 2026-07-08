@@ -1,18 +1,66 @@
 {
   "components" : {
     "schemas" : {
-      "Artifact" : {
+      "Artefact" : {
         "additionalProperties" : true,
         "properties" : {
+          "minOsVersion" : {
+            "type" : [
+              "string",
+              "null"
+            ]
+          },
           "name" : {
             "type" : "string"
           },
-          "type" : {
+          "path" : {
+            "description" : "secureFilename path: <build-id>/<artifact-id>/<filename>",
             "type" : "string"
           },
+          "size" : {
+            "description" : "size in bytes",
+            "type" : [
+              "integer",
+              "null"
+            ]
+          },
+          "supportedPlatforms" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : [
+              "array",
+              "null"
+            ]
+          },
+          "type" : {
+            "description" : "e.g. bundle",
+            "type" : [
+              "string",
+              "null"
+            ]
+          },
           "url" : {
-            "description" : "secureFilename path used by the artifacts endpoints",
+            "description" : "full authenticated download URL (fetch directly with the token header)",
             "type" : "string"
+          },
+          "version" : {
+            "type" : [
+              "string",
+              "null"
+            ]
+          },
+          "versionCode" : {
+            "type" : [
+              "string",
+              "null"
+            ]
+          },
+          "versionName" : {
+            "type" : [
+              "string",
+              "null"
+            ]
           }
         },
         "required" : [
@@ -26,23 +74,89 @@
           "_id" : {
             "type" : "string"
           },
-          "artifacts" : {
+          "appId" : {
+            "type" : "string"
+          },
+          "artefacts" : {
             "items" : {
-              "$ref" : "#/components/schemas/Artifact"
+              "$ref" : "#/components/schemas/Artefact"
             },
             "type" : "array"
           },
           "branch" : {
-            "type" : "string"
+            "type" : [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt" : {
+            "type" : [
+              "string",
+              "null"
+            ]
+          },
+          "fileWorkflowId" : {
+            "description" : "workflow id from codemagic.yaml",
+            "type" : [
+              "string",
+              "null"
+            ]
+          },
+          "finishedAt" : {
+            "type" : [
+              "string",
+              "null"
+            ]
+          },
+          "index" : {
+            "type" : "integer"
+          },
+          "instanceType" : {
+            "type" : [
+              "string",
+              "null"
+            ]
+          },
+          "labels" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : [
+              "string",
+              "null"
+            ]
+          },
+          "startedAt" : {
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "status" : {
+            "description" : "e.g. finished, failed, canceled, timeout, building, queued",
             "type" : "string"
           },
           "tag" : {
-            "type" : "string"
+            "type" : [
+              "string",
+              "null"
+            ]
+          },
+          "version" : {
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "workflowId" : {
-            "type" : "string"
+            "description" : "null when the build uses codemagic.yaml; see fileWorkflowId",
+            "type" : [
+              "string",
+              "null"
+            ]
           }
         },
         "required" : [
@@ -403,11 +517,24 @@
                 "schema" : {
                   "additionalProperties" : true,
                   "properties" : {
+                    "applications" : {
+                      "items" : {
+                        "additionalProperties" : true,
+                        "type" : "object"
+                      },
+                      "type" : "array"
+                    },
                     "builds" : {
                       "items" : {
                         "$ref" : "#/components/schemas/Build"
                       },
                       "type" : "array"
+                    },
+                    "nextPageUrl" : {
+                      "type" : [
+                        "string",
+                        "null"
+                      ]
                     }
                   },
                   "required" : [
@@ -417,10 +544,10 @@
                 }
               }
             },
-            "description" : "Builds"
+            "description" : "Builds (cursor-paginated via nextPageUrl)"
           }
         },
-        "summary" : "List / filter builds (undocumented in the v1 HTML docs)",
+        "summary" : "List / filter builds (undocumented in the v1 HTML docs; verified live)",
         "tags" : [
           "Builds"
         ]
@@ -510,6 +637,10 @@
                 "schema" : {
                   "additionalProperties" : true,
                   "properties" : {
+                    "application" : {
+                      "additionalProperties" : true,
+                      "type" : "object"
+                    },
                     "build" : {
                       "$ref" : "#/components/schemas/Build"
                     }
@@ -521,10 +652,10 @@
                 }
               }
             },
-            "description" : "The build"
+            "description" : "The build (with its application)"
           }
         },
-        "summary" : "Get one build (undocumented in the v1 HTML docs)",
+        "summary" : "Get one build (undocumented in the v1 HTML docs; verified live)",
         "tags" : [
           "Builds"
         ]

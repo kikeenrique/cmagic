@@ -1,25 +1,27 @@
 {
-  "_comment": "Hand-authored overlay merged into the docs-scraped base by Scripts/GenerateOpenAPIV1.swift (deep merge, patch wins on leaves). Holds what the v1 HTML docs omit: the undocumented-but-real build read endpoints and the shared response schemas. Do not edit the generated output directly — edit this file.",
-  "_unverified": "GET /builds, GET /builds/:id, the ?appId= filter, and the Build/Artifact field names are NOT in the v1 docs — sourced from roadmap/codemagic-swift-cli-brief.md and not yet confirmed against a live token. See PROCESS.md section 5.",
+  "_comment": "Hand-authored overlay merged into the docs-scraped base by Scripts/GenerateOpenAPIV1.swift (deep merge, patch wins on leaves). Holds what the v1 HTML docs omit: the undocumented build read endpoints and the shared response schemas. Do not edit the generated output directly — edit this file.",
+  "_verified": "GET /builds, GET /builds/:id, GET /apps, GET /apps/:id and the ?appId= filter were confirmed against the live API (July 2026, HTTP 200). Field names/shapes below are from real responses. NOTE: the build's artifact array is spelled 'artefacts' (British) and each entry's byte size is 'size' (not 'size_in_bytes'). See PROCESS.md section 5.",
   "paths": {
     "/builds": {
       "get": {
         "tags": ["Builds"],
         "operationId": "listBuilds",
-        "summary": "List / filter builds (undocumented in the v1 HTML docs)",
+        "summary": "List / filter builds (undocumented in the v1 HTML docs; verified live)",
         "parameters": [
           { "name": "appId", "in": "query", "required": false, "schema": { "type": "string" } }
         ],
         "responses": {
           "200": {
-            "description": "Builds",
+            "description": "Builds (cursor-paginated via nextPageUrl)",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "additionalProperties": true,
                   "properties": {
-                    "builds": { "type": "array", "items": { "$ref": "#/components/schemas/Build" } }
+                    "builds": { "type": "array", "items": { "$ref": "#/components/schemas/Build" } },
+                    "applications": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+                    "nextPageUrl": { "type": ["string", "null"] }
                   },
                   "required": ["builds"]
                 }
@@ -33,20 +35,21 @@
       "get": {
         "tags": ["Builds"],
         "operationId": "getBuild",
-        "summary": "Get one build (undocumented in the v1 HTML docs)",
+        "summary": "Get one build (undocumented in the v1 HTML docs; verified live)",
         "parameters": [
           { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
         ],
         "responses": {
           "200": {
-            "description": "The build",
+            "description": "The build (with its application)",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "additionalProperties": true,
                   "properties": {
-                    "build": { "$ref": "#/components/schemas/Build" }
+                    "build": { "$ref": "#/components/schemas/Build" },
+                    "application": { "type": "object", "additionalProperties": true }
                   },
                   "required": ["build"]
                 }
@@ -64,21 +67,38 @@
         "additionalProperties": true,
         "properties": {
           "_id": { "type": "string" },
-          "status": { "type": "string" },
-          "branch": { "type": "string" },
-          "tag": { "type": "string" },
-          "workflowId": { "type": "string" },
-          "artifacts": { "type": "array", "items": { "$ref": "#/components/schemas/Artifact" } }
+          "appId": { "type": "string" },
+          "status": { "type": "string", "description": "e.g. finished, failed, canceled, timeout, building, queued" },
+          "branch": { "type": ["string", "null"] },
+          "tag": { "type": ["string", "null"] },
+          "workflowId": { "type": ["string", "null"], "description": "null when the build uses codemagic.yaml; see fileWorkflowId" },
+          "fileWorkflowId": { "type": ["string", "null"], "description": "workflow id from codemagic.yaml" },
+          "instanceType": { "type": ["string", "null"] },
+          "index": { "type": "integer" },
+          "message": { "type": ["string", "null"] },
+          "version": { "type": ["string", "null"] },
+          "labels": { "type": "array", "items": { "type": "string" } },
+          "createdAt": { "type": ["string", "null"] },
+          "startedAt": { "type": ["string", "null"] },
+          "finishedAt": { "type": ["string", "null"] },
+          "artefacts": { "type": "array", "items": { "$ref": "#/components/schemas/Artefact" } }
         },
         "required": ["_id"]
       },
-      "Artifact": {
+      "Artefact": {
         "type": "object",
         "additionalProperties": true,
         "properties": {
           "name": { "type": "string" },
-          "type": { "type": "string" },
-          "url": { "type": "string", "description": "secureFilename path used by the artifacts endpoints" }
+          "type": { "type": ["string", "null"], "description": "e.g. bundle" },
+          "url": { "type": "string", "description": "full authenticated download URL (fetch directly with the token header)" },
+          "path": { "type": "string", "description": "secureFilename path: <build-id>/<artifact-id>/<filename>" },
+          "size": { "type": ["integer", "null"], "description": "size in bytes" },
+          "version": { "type": ["string", "null"] },
+          "versionName": { "type": ["string", "null"] },
+          "versionCode": { "type": ["string", "null"] },
+          "supportedPlatforms": { "type": ["array", "null"], "items": { "type": "string" } },
+          "minOsVersion": { "type": ["string", "null"] }
         },
         "required": ["url"]
       }
