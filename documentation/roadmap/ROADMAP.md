@@ -83,8 +83,8 @@ All four verified live against the real token.
 - [ ] Distribute via `mise` (`spm:` backend or `ubi:` release binary) + a `mise run cmagic …` task
 - [ ] CI (build + test) on the standalone repo
 
-Blocked on a decision: the eventual GitHub **owner/repo** (needed for `mise use spm:<owner>/<repo>`
-and `ubi:` release binaries).
+Repo created (public, default branch `main`). Distribution targets `spm:<owner>/<repo>`
+(or `ubi:<owner>/<repo>` once releases exist).
 
 ## Authentication (decided)
 
