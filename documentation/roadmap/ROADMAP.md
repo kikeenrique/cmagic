@@ -62,7 +62,7 @@ All four verified live against the real token.
 
 ## Phase 4 — Polish & distribution ⏳
 
-- [ ] `--json` output mode for every command (pipeable into `jq`)
+- [x] `--json` output mode for every command (pipeable into `jq`; verified live)
 - [x] Tests (21, all offline; ~83% line coverage of CodemagicApiKit): config parsing + `load()`
       errors, model decoding, `AuthMiddleware`, and the full networked layer (apps/builds/build/
       caches/cancel+208/start/public-url/download) via **Replay** synthetic stubs (no HAR, no

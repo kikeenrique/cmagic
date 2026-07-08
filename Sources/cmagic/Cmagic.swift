@@ -30,9 +30,13 @@ enum Session {
 struct Apps: AsyncParsableCommand {
     static let configuration = CommandConfiguration(commandName: "apps", abstract: "List applications (id and name).")
 
+    @OptionGroup var out: OutputOptions
+
     func run() async throws {
         let (_, cm) = try Session.loadConfigAndClient()
-        for app in try await cm.apps() {
+        let apps = try await cm.apps()
+        if out.json { try out.emit(apps); return }
+        for app in apps {
             print("\(app._id)\t\(app.appName ?? "")")
         }
     }
@@ -52,6 +56,8 @@ struct Builds: AsyncParsableCommand {
     @Option(name: [.short, .long], help: "Max builds to show.")
     var limit: Int = 20
 
+    @OptionGroup var out: OutputOptions
+
     func run() async throws {
         let (config, cm) = try Session.loadConfigAndClient()
         let appId = try Session.resolveAppId(app, config: config)
@@ -60,6 +66,7 @@ struct Builds: AsyncParsableCommand {
         if let branchFilter { builds = builds.filter { $0.branch == branchFilter } }
         builds = Array(builds.prefix(max(0, limit)))
 
+        if out.json { try out.emit(builds); return }
         print("STATUS\tBRANCH\tARTEFACTS\tID")
         for b in builds {
             let count = b.artefacts?.count ?? 0
@@ -83,9 +90,12 @@ struct Build: AsyncParsableCommand {
         @Argument(help: "Build id.")
         var buildId: String
 
+        @OptionGroup var out: OutputOptions
+
         func run() async throws {
             let (_, cm) = try Session.loadConfigAndClient()
             let b = try await cm.build(id: buildId)
+            if out.json { try out.emit(b); return }
             print("id:         \(b._id)")
             print("status:     \(b.status ?? "?")")
             print("branch/tag: \(b.branch ?? b.tag ?? "-")")
@@ -116,6 +126,8 @@ struct Build: AsyncParsableCommand {
         @Option(name: [.short, .long], help: "Tag to build (one of --branch/--tag required).")
         var tag: String?
 
+        @OptionGroup var out: OutputOptions
+
         func validate() throws {
             if (branch ?? "").isEmpty && (tag ?? "").isEmpty {
                 throw ValidationError("Provide --branch or --tag.")
@@ -126,6 +138,7 @@ struct Build: AsyncParsableCommand {
             let (config, cm) = try Session.loadConfigAndClient()
             let appId = try Session.resolveAppId(app, config: config)
             let buildId = try await cm.startBuild(appId: appId, workflowId: workflow, branch: branch, tag: tag)
+            if out.json { try out.emit(["buildId": buildId]); return }
             print(buildId)
         }
     }
@@ -136,9 +149,16 @@ struct Build: AsyncParsableCommand {
         @Argument(help: "Build id.")
         var buildId: String
 
+        @OptionGroup var out: OutputOptions
+
         func run() async throws {
             let (_, cm) = try Session.loadConfigAndClient()
-            switch try await cm.cancelBuild(id: buildId) {
+            let outcome = try await cm.cancelBuild(id: buildId)
+            if out.json {
+                try out.emit(["buildId": buildId, "outcome": outcome == .cancelled ? "cancelled" : "alreadyFinished"])
+                return
+            }
+            switch outcome {
             case .cancelled: print("cancelled \(buildId)")
             case .alreadyFinished: print("build \(buildId) had already finished")
             }

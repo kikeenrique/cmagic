@@ -7,8 +7,8 @@ querying the service, so today the only remote-access route is raw `curl`; this 
 that with a typed Swift client.
 
 > **Status: in progress.** The full command surface (apps, builds, build show/start/cancel,
-> artifacts pull/public-url, caches) is implemented and verified live. Remaining: `--json` output,
-> decode-fixture tests, and `mise`/CI distribution. See
+> artifacts pull/public-url, caches) is implemented and verified live, with `--json` output and an
+> offline test suite (~83% library coverage). Remaining: `mise`/CI distribution. See
 > [`documentation/roadmap/ROADMAP.md`](documentation/roadmap/ROADMAP.md).
 
 ## Build, test, run
@@ -37,8 +37,12 @@ cmagic caches list --app <id>
 cmagic caches delete --app <id> [--cache-id <id>]
 ```
 
-`--app` and `--branch` fall back to `app`/`branch` in the config file if set. Run any command with
-`--help` for options.
+`--app` and `--branch` fall back to `app`/`branch` in the config file if set. Every command accepts
+`--json` for machine-readable output (pipe into `jq`). Run any command with `--help` for options.
+
+```bash
+cmagic builds --app <id> --json | jq '.[] | select(.status=="failed")._id'
+```
 
 ## Approach
 

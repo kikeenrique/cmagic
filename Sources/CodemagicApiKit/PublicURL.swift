@@ -4,7 +4,7 @@ import FoundationNetworking
 #endif
 
 /// Response of the artefact public-url endpoint.
-public struct ArtefactPublicURL: Sendable, Decodable {
+public struct ArtefactPublicURL: Sendable, Codable {
     public let url: String
     /// ISO-8601 expiry as returned by the API (the request sends UNIX seconds).
     public let expiresAt: String?

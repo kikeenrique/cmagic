@@ -29,6 +29,8 @@ struct Artifacts: AsyncParsableCommand {
         @Flag(help: "Keep the downloaded archive after unzipping.")
         var keepArchive = false
 
+        @OptionGroup var out: OutputOptions
+
         func run() async throws {
             let (config, cm) = try Session.loadConfigAndClient()
             let appId = try Session.resolveAppId(app, config: config)
@@ -53,12 +55,17 @@ struct Artifacts: AsyncParsableCommand {
             let downloader = ArtefactDownloader(token: config.token)
             let file = try await downloader.download(from: url, to: outDir)
 
-            if Archive.isZip(file) {
+            let unzipped = Archive.isZip(file)
+            var resultPath = file.path
+            if unzipped {
                 try Archive.unzip(file, into: outDir)
                 if !keepArchive { try? FileManager.default.removeItem(at: file) }
-                print(outDir.path)
+                resultPath = outDir.path
+            }
+            if out.json {
+                try out.emit(["buildId": build._id, "artefact": artefact.name ?? "", "path": resultPath, "unzipped": "\(unzipped)"])
             } else {
-                print(file.path)
+                print(resultPath)
             }
         }
     }
@@ -80,6 +87,8 @@ struct Artifacts: AsyncParsableCommand {
         @Option(name: .long, help: "Hours until the URL expires.")
         var expiresInHours: Double = 24
 
+        @OptionGroup var out: OutputOptions
+
         func run() async throws {
             let (config, cm) = try Session.loadConfigAndClient()
             let appId = try Session.resolveAppId(app, config: config)
@@ -98,6 +107,7 @@ struct Artifacts: AsyncParsableCommand {
                 artefactPath: path,
                 expiresAt: Date().addingTimeInterval(expiresInHours * 3600)
             )
+            if out.json { try out.emit(result); return }
             print(result.url)
             if let expiresAt = result.expiresAt {
                 FileHandle.standardError.write(Data("expires: \(expiresAt)\n".utf8))
