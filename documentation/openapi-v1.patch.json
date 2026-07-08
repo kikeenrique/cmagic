@@ -177,9 +177,27 @@
           "createdAt": { "type": ["string", "null"] },
           "startedAt": { "type": ["string", "null"] },
           "finishedAt": { "type": ["string", "null"] },
-          "artefacts": { "type": "array", "items": { "$ref": "#/components/schemas/Artefact" } }
+          "artefacts": { "type": "array", "items": { "$ref": "#/components/schemas/Artefact" } },
+          "buildActions": { "type": "array", "items": { "$ref": "#/components/schemas/BuildAction" }, "description": "ordered build steps; verified live (GET /builds/:id)" }
         },
         "required": ["_id"]
+      },
+      "BuildAction": {
+        "type": "object",
+        "additionalProperties": true,
+        "description": "one build step. Verified live: name/type/status/startedAt/finishedAt/logUrl/subactions/results. Subactions omit name/type and carry a `command` instead.",
+        "properties": {
+          "_id": { "type": ["string", "null"] },
+          "name": { "type": ["string", "null"], "description": "e.g. 'Build App'; null on subactions" },
+          "type": { "type": ["string", "null"], "description": "e.g. preparing, fetching, publishing; null for script steps" },
+          "status": { "type": ["string", "null"], "description": "e.g. success, failed, skipped, building" },
+          "command": { "type": ["string", "null"], "description": "the script body (subactions only)" },
+          "startedAt": { "type": ["string", "null"] },
+          "finishedAt": { "type": ["string", "null"] },
+          "logUrl": { "type": ["string", "null"], "description": "per-step log endpoint (fetch directly with the token header)" },
+          "subactions": { "type": ["array", "null"], "items": { "$ref": "#/components/schemas/BuildAction" } },
+          "results": { "type": ["array", "null"], "items": { "type": "object", "additionalProperties": true } }
+        }
       },
       "Artefact": {
         "type": "object",

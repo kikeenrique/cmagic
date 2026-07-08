@@ -5,6 +5,7 @@ import Foundation
 public extension Codemagic {
     typealias Application = Components.Schemas.Application
     typealias Build = Components.Schemas.Build
+    typealias BuildAction = Components.Schemas.BuildAction
     typealias Artefact = Components.Schemas.Artefact
     typealias Cache = Components.Schemas.Cache
 

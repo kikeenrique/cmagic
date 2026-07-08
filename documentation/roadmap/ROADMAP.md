@@ -56,7 +56,8 @@ Verified live against a real token (July 2026, read endpoints only). See PROCESS
 - [x] `cmagic apps` — list apps → `_id`
 - [x] `cmagic builds --app <id> [--branch <b>] [--limit N]` (branch/limit are client-side — the v1
       API only filters by `appId`; first page only for now)
-- [x] `cmagic build show <buildId>` — one build's detail (incl. artefacts + human sizes)
+- [x] `cmagic build show <buildId>` — one build's detail (incl. artefacts + human sizes); `--steps`
+      renders each build step's status + duration (v1 `buildActions`, verified live, 16 steps)
 - [x] `cmagic artifacts pull [--app <id>] [--branch <b>] --name <substr> [-o <dir>]` — the core
       one-liner (latest build for branch → match artefact by name → download → auto-unzip zip/xcresult)
 

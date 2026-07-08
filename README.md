@@ -26,6 +26,7 @@ The token is read from the config file (see [Authentication](#authentication)).
 cmagic apps                                   # list apps: <id>  <name>
 cmagic builds --app <id> --limit 10           # recent builds (add --branch <b> to filter)
 cmagic build show <buildId>                    # one build's detail + artefacts
+cmagic build show <buildId> --steps            # + each step's status and duration
 cmagic build start --app <id> --workflow <w> --branch main
 cmagic build cancel <buildId>
 

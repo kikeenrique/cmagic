@@ -1,5 +1,6 @@
 import ArgumentParser
 import CodemagicApiKit
+import Foundation
 
 @main
 struct Cmagic: AsyncParsableCommand {
@@ -90,6 +91,9 @@ struct Build: AsyncParsableCommand {
         @Argument(help: "Build id.")
         var buildId: String
 
+        @Flag(name: .long, help: "Show the build's steps (name, status, duration).")
+        var steps: Bool = false
+
         @OptionGroup var out: OutputOptions
 
         func run() async throws {
@@ -107,6 +111,14 @@ struct Build: AsyncParsableCommand {
             print("artefacts:  \(arts.count)")
             for a in arts {
                 print("  - \(a.name ?? "?")\t\(a.size.map(bytesHuman) ?? "-")")
+            }
+            let acts = b.buildActions ?? []
+            print("steps:      \(acts.count)")
+            if steps {
+                for a in acts {
+                    let dur = duration(from: a.startedAt, to: a.finishedAt)
+                    print("  \(statusMark(a.status)) \(durationHuman(dur))\t\(a.name ?? a.command?.firstLine ?? "?")")
+                }
             }
         }
     }
@@ -172,4 +184,42 @@ func bytesHuman(_ bytes: Int) -> String {
     var unit = 0
     while value >= 1024 && unit < units.count - 1 { value /= 1024; unit += 1 }
     return unit == 0 ? "\(bytes) B" : String(format: "%.1f %@", value, units[unit])
+}
+
+/// A short glyph for a build-step status, so a run reads at a glance.
+func statusMark(_ status: String?) -> String {
+    switch status {
+    case "success": return "✓"
+    case "failed", "error": return "✗"
+    case "skipped": return "–"
+    case "building", "queued", nil: return "…"
+    default: return "?"
+    }
+}
+
+/// Seconds between two ISO-8601 timestamps, or nil if either is missing/unparseable.
+func duration(from start: String?, to end: String?) -> TimeInterval? {
+    guard let start, let end,
+          let s = isoDate(start), let e = isoDate(end) else { return nil }
+    return e.timeIntervalSince(s)
+}
+
+private func isoDate(_ s: String) -> Date? {
+    let f = ISO8601DateFormatter()
+    f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+    return f.date(from: s) ?? ISO8601DateFormatter().date(from: s)
+}
+
+/// `mm:ss` (or `h:mm:ss`) from seconds; `-` when unknown.
+func durationHuman(_ seconds: TimeInterval?) -> String {
+    guard let seconds, seconds >= 0 else { return "    -" }
+    let total = Int(seconds.rounded())
+    let h = total / 3600, m = (total % 3600) / 60, s = total % 60
+    return h > 0 ? String(format: "%d:%02d:%02d", h, m, s) : String(format: "%2d:%02d", m, s)
+}
+
+extension String {
+    var firstLine: String? {
+        split(whereSeparator: \.isNewline).first.map(String.init)
+    }
 }

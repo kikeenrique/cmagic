@@ -52,6 +52,39 @@ import Testing
         #expect(art.url == "https://example.test/a/b/app_artifacts.zip")
     }
 
+    @Test func decodesBuildActionsWithSubactions() throws {
+        let json = Data("""
+        {
+          "_id": "bbbbbbbbbbbbbbbbbbbbbbbb",
+          "status": "finished",
+          "buildActions": [
+            { "_id": "s1", "name": "Preparing build machine", "type": "preparing", "status": "success",
+              "startedAt": "2026-07-08T18:24:20.540000+00:00", "finishedAt": "2026-07-08T18:25:19.374000+00:00",
+              "logUrl": "https://example.test/builds/b/step/s1", "results": [], "subactions": [] },
+            { "_id": "s2", "name": "Install tools via mise", "type": null, "status": "success",
+              "startedAt": "2026-07-08T18:25:38.000000+00:00", "finishedAt": "2026-07-08T18:25:39.000000+00:00",
+              "subactions": [
+                { "command": "#!/usr/bin/env bash\\nmise install", "status": "success",
+                  "logUrl": "https://example.test/builds/b/step/s2a" }
+              ] }
+          ]
+        }
+        """.utf8)
+        let build = try decoder.decode(Codemagic.Build.self, from: json)
+        #expect(build.buildActions?.count == 2)
+        let first = try #require(build.buildActions?.first)
+        #expect(first.name == "Preparing build machine")
+        #expect(first._type == "preparing")
+        #expect(first.status == "success")
+        #expect(first.logUrl == "https://example.test/builds/b/step/s1")
+        let second = try #require(build.buildActions?.last)
+        #expect(second._type == nil)                         // script steps have no type
+        #expect(second.subactions?.count == 1)
+        let sub = try #require(second.subactions?.first)
+        #expect(sub.command?.contains("mise install") == true)
+        #expect(sub.name == nil)                             // subactions carry a command, not a name
+    }
+
     @Test func decodesCache() throws {
         let json = Data("""
         { "_id": "cccccccccccccccccccccccc", "appId": "aaaaaaaaaaaaaaaaaaaaaaaa", "workflowId": "build-and-test", "platform": "macOS (Apple silicon)", "size": 385515520 }

@@ -134,6 +134,13 @@
               "null"
             ]
           },
+          "buildActions" : {
+            "description" : "ordered build steps; verified live (GET /builds/:id)",
+            "items" : {
+              "$ref" : "#/components/schemas/BuildAction"
+            },
+            "type" : "array"
+          },
           "createdAt" : {
             "type" : [
               "string",
@@ -207,6 +214,85 @@
         "required" : [
           "_id"
         ],
+        "type" : "object"
+      },
+      "BuildAction" : {
+        "additionalProperties" : true,
+        "description" : "one build step. Verified live: name/type/status/startedAt/finishedAt/logUrl/subactions/results. Subactions omit name/type and carry a `command` instead.",
+        "properties" : {
+          "_id" : {
+            "type" : [
+              "string",
+              "null"
+            ]
+          },
+          "command" : {
+            "description" : "the script body (subactions only)",
+            "type" : [
+              "string",
+              "null"
+            ]
+          },
+          "finishedAt" : {
+            "type" : [
+              "string",
+              "null"
+            ]
+          },
+          "logUrl" : {
+            "description" : "per-step log endpoint (fetch directly with the token header)",
+            "type" : [
+              "string",
+              "null"
+            ]
+          },
+          "name" : {
+            "description" : "e.g. 'Build App'; null on subactions",
+            "type" : [
+              "string",
+              "null"
+            ]
+          },
+          "results" : {
+            "items" : {
+              "additionalProperties" : true,
+              "type" : "object"
+            },
+            "type" : [
+              "array",
+              "null"
+            ]
+          },
+          "startedAt" : {
+            "type" : [
+              "string",
+              "null"
+            ]
+          },
+          "status" : {
+            "description" : "e.g. success, failed, skipped, building",
+            "type" : [
+              "string",
+              "null"
+            ]
+          },
+          "subactions" : {
+            "items" : {
+              "$ref" : "#/components/schemas/BuildAction"
+            },
+            "type" : [
+              "array",
+              "null"
+            ]
+          },
+          "type" : {
+            "description" : "e.g. preparing, fetching, publishing; null for script steps",
+            "type" : [
+              "string",
+              "null"
+            ]
+          }
+        },
         "type" : "object"
       },
       "Cache" : {
