@@ -6,10 +6,10 @@ build's `TestResults-*.xcresult`) straight from the terminal. Codemagic ships no
 querying the service, so today the only remote-access route is raw `curl`; this package replaces
 that with a typed Swift client.
 
-> **Status: usable.** The full command surface (apps, builds, build show/start/cancel/logs,
-> `show --steps`, artifacts pull/public-url, caches) is implemented and verified live, with `--json`
-> output, a GitHub Actions CI build/test, an offline test suite (~83% library coverage), and
-> tagged releases with prebuilt universal binaries. See
+> **Status: released (`v0.1.0`).** The full command surface (apps, builds, build
+> show/start/cancel/logs, `show --steps`, artifacts pull/public-url, caches) is implemented and
+> verified live, with `--json` output, a GitHub Actions CI build/test, an offline test suite
+> (~83% library coverage), and a tagged `v0.1.0` release with prebuilt universal binaries. See
 > [`documentation/roadmap/ROADMAP.md`](documentation/roadmap/ROADMAP.md).
 
 ## Install

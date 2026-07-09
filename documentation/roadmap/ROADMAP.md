@@ -14,8 +14,8 @@ Legend: ✅ done · ⏳ pending · 🔑 blocked on a live `CM_TOKEN`.
 `build start`, which would trigger a real build). The `CodemagicApiKit` library wraps a
 swift-openapi-generator client (auth middleware + config-file token + artefact downloader). GitHub
 Actions CI runs build + test. 23 offline tests, ~83% library line coverage (networked paths stubbed
-with Replay). Released as `0.1.0` (tag `v0.1.0`) with prebuilt universal binaries, distributed via a
-Homebrew tap and `mise`.
+with Replay). Released as `0.1.0` (tag `v0.1.0`) with prebuilt universal binaries; consumed by
+`mise` and a separately-maintained Homebrew tap.
 
 **Remaining:** only the deferred `POST /builds instanceType` live-check (would trigger a real build)
 and the open questions below (revisit v3; preview-API stability).
@@ -78,7 +78,7 @@ All four verified live against the real token.
       (URLSession-direct; system steps carry `logUrl`, script steps carry it on their subaction);
       strips the `<span>` colour markup to plain text by default. Verified live.
 
-## Phase 4 — Polish & distribution ⏳
+## Phase 4 — Polish & distribution ✅
 
 - [x] `--json` output mode for every command (pipeable into `jq`; verified live)
 - [x] Tests (23, all offline; ~83% line coverage of CodemagicApiKit): config parsing + `load()`
@@ -88,19 +88,26 @@ All four verified live against the real token.
 - [x] `README.md`: usage + `artifacts pull` example + `--json`/`jq` + **install** section
       (Homebrew + `mise` github backend)
 - [x] Release automation — `mise/tasks/package` builds a universal (arm64+x86_64) binary via
-      per-arch `swift build` + `lipo` and writes `dist/cmagic-{aarch64,x86_64}-apple-darwin.tar.gz`
-      + `SHA256SUMS`; `mise/tasks/release <version>` tags + pushes. `.github/workflows/release.yml`
-      runs `mise run package` on a `0.*` tag and attaches the assets to the GitHub release.
-- [x] Cut the first release — tag `v0.1.0` (release CI builds the assets)
-- [x] Distribute via Homebrew tap (`kikeenrique/homebrew-tap`, arch-aware `Formula/cmagic.rb`) +
-      `mise` `github:` backend — both consume the release assets. Prefer the `github:` backend over
-      `ubi:` (deprecated upstream). Release tags are `v`-prefixed (`v0.1.0`) so the conventional
-      `v`-prefix tooling resolves cleanly.
+      per-arch `swift build` + `lipo` (a single multi-arch build trips the XCBuild backend, which
+      can't resolve the OpenAPI plugin), then packages it into **deterministic** tarballs (`gzip -n`,
+      so both arch tarballs are byte-identical and share one sha256):
+      `dist/cmagic-{aarch64,x86_64}-apple-darwin.tar.gz` + `SHA256SUMS`. `mise/tasks/release
+      <version>` tags + pushes. `.github/workflows/release.yml` runs `mise run package` on a `v*`
+      tag and attaches the assets via `gh release create` (SwiftPM cache in a release-scoped key
+      that warm-starts from the CI dependency cache).
+- [x] Cut the first release — tag `v0.1.0`, universal binaries published to the GitHub release.
+- [x] Distribution consumers — `mise` via the `github:` backend
+      (`mise use github:kikeenrique/cmagic`; prefer it over the deprecated `ubi:`, which forces a
+      `v`-prefixed tag), and a **separately-maintained Homebrew tap** (`kikeenrique/homebrew-tap`)
+      that packages `cmagic` on its own terms. The tap is outside this repo's scope — cmagic's
+      responsibility ends at publishing `v`-prefixed tagged releases; downstream packaging consumes
+      them.
 - [x] CI (build + test) on the standalone repo — GitHub Actions (`.github/workflows/ci.yml`),
-      `swift build` + `swift test` on `macos-26`/Xcode 26.6, with SwiftPM caching
+      `swift build` + `swift test` on `macos-26`/Xcode 26.6, with SwiftPM caching. Action versions
+      kept current: `actions/checkout@v7`, `actions/cache@v6`, `jdx/mise-action@v4`.
 
-Repo created (public, default branch `main`). Distribution consumes prebuilt release assets:
-Homebrew (`brew install kikeenrique/tap/cmagic`) and `mise` (`github:kikeenrique/cmagic`).
+Repo public, default branch `main`. cmagic publishes `v`-prefixed tagged releases with prebuilt
+universal binaries; downstream packaging (a separate Homebrew tap, `mise`) consumes them.
 
 ## Authentication (decided)
 
