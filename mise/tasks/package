@@ -16,8 +16,10 @@ file dist/bin/cmagic
 
 # One universal binary, shipped under two target-triple names so `mise`/ubi
 # arch-matching resolves on both Apple Silicon and Intel; Homebrew picks per-arch.
+# gzip -n omits the timestamp/name from the header so the two archives are
+# byte-identical (both wrap the same lipo output) and share one sha256.
 for triple in aarch64-apple-darwin x86_64-apple-darwin; do
-  tar -czf "dist/cmagic-$triple.tar.gz" -C dist/bin cmagic
+  tar -cf - -C dist/bin cmagic | gzip -n > "dist/cmagic-$triple.tar.gz"
   shasum -a 256 "dist/cmagic-$triple.tar.gz" | tee -a dist/SHA256SUMS
 done
 ls -l dist
