@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-#MISE description="Tag a version and push it, triggering the release CI. Usage: mise run release 0.1.0"
-#USAGE arg "<version>" help="Version tag to create and push, e.g. 0.1.0"
+#MISE description="Tag a version and push it, triggering the release CI. Usage: mise run release v0.1.0"
+#USAGE arg "<version>" help="Version tag to create and push, e.g. v0.1.0"
 set -euo pipefail
 
 git tag "$usage_version"
