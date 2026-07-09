@@ -14,8 +14,8 @@ Legend: ✅ done · ⏳ pending · 🔑 blocked on a live `CM_TOKEN`.
 `build start`, which would trigger a real build). The `CodemagicApiKit` library wraps a
 swift-openapi-generator client (auth middleware + config-file token + artefact downloader). GitHub
 Actions CI runs build + test. 23 offline tests, ~83% library line coverage (networked paths stubbed
-with Replay). Released as `0.1.0` with prebuilt universal binaries, distributed via a Homebrew tap
-and `mise`.
+with Replay). Released as `0.1.0` (tag `v0.1.0`) with prebuilt universal binaries, distributed via a
+Homebrew tap and `mise`.
 
 **Remaining:** only the deferred `POST /builds instanceType` live-check (would trigger a real build)
 and the open questions below (revisit v3; preview-API stability).
@@ -91,11 +91,11 @@ All four verified live against the real token.
       per-arch `swift build` + `lipo` and writes `dist/cmagic-{aarch64,x86_64}-apple-darwin.tar.gz`
       + `SHA256SUMS`; `mise/tasks/release <version>` tags + pushes. `.github/workflows/release.yml`
       runs `mise run package` on a `0.*` tag and attaches the assets to the GitHub release.
-- [x] Cut the first release — tag `0.1.0` (release CI built the assets; run 28978333390)
+- [x] Cut the first release — tag `v0.1.0` (release CI builds the assets)
 - [x] Distribute via Homebrew tap (`kikeenrique/homebrew-tap`, arch-aware `Formula/cmagic.rb`) +
-      `mise` `github:` backend — both consume the release assets; verified: `brew install` +
-      `brew test` pass, `mise x github:kikeenrique/cmagic` runs. Use `github:` not `ubi:`: the
-      deprecated `ubi:` backend forces a `v`-prefixed tag (`v0.1.0`) and 404s our `0.1.0` tag.
+      `mise` `github:` backend — both consume the release assets. Prefer the `github:` backend over
+      `ubi:` (deprecated upstream). Release tags are `v`-prefixed (`v0.1.0`) so the conventional
+      `v`-prefix tooling resolves cleanly.
 - [x] CI (build + test) on the standalone repo — GitHub Actions (`.github/workflows/ci.yml`),
       `swift build` + `swift test` on `macos-26`/Xcode 26.6, with SwiftPM caching
 
