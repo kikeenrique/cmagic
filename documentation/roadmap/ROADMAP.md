@@ -18,7 +18,8 @@ Actions CI runs build + test. 23 offline tests, ~83% library line coverage (netw
 with Replay). Released as `0.1.0` (tag `v0.1.0`) with prebuilt universal binaries; consumed by
 `mise` and a separately-maintained Homebrew tap.
 
-**Remaining:** only the open questions below (revisit v3; preview-API stability).
+**Remaining:** the optional `POST /builds instanceType` param (expose a CLI flag, then confirm it
+live — no longer cost-blocked), plus the open questions below (revisit v3; preview-API stability).
 
 ## Phase 0 — Research & API specs ✅
 
@@ -42,7 +43,9 @@ Verified live against a real token (July 2026, read endpoints only). See PROCESS
 - [x] Confirm `GET /builds` and `GET /builds/:id` exist and their shape; `?appId=` filters (all 200; `nextPageUrl` paging)
 - [x] Confirm v1 build field names (`_id` not `id`; artifact array is **`artefacts`**; `status` ∈ finished/failed/canceled/timeout)
 - [x] Tighten the `Build`/`Artefact` schemas in `openapi-v1.patch.json` from real responses
-- [ ] Confirm `POST /builds` accepts `instanceType` (deferred — would trigger a real build)
+- [ ] Confirm `POST /builds` accepts `instanceType` (still pending, but no longer blocked on cost:
+      the 2026-07-15 live test showed start→cancel is cheap. Deferred only because `startBuild`/the
+      CLI don't yet expose an `instanceType` param — add the flag first, then confirm live.)
 
 ## Phase 1 — Package scaffolding & generated client ✅
 
@@ -68,8 +71,9 @@ All four verified live against the real token.
 
 ## Phase 3 — Write ops & remaining surface ✅
 
-- [x] `cmagic build start --app <id> --workflow <w> (--branch <b> | --tag <t>)` — implemented
-      (not run live — triggers a real build)
+- [x] `cmagic build start --app <id> --workflow <w> (--branch <b> | --tag <t>)` — implemented and
+      verified live 2026-07-15 (start→cancel→show round-trip against a real app; the build was
+      canceled ~8s in, so no real build minutes were consumed)
 - [x] `cmagic build cancel <buildId>` — verified live (208 → "already finished")
 - [x] `cmagic artifacts public-url [--app] [--branch] --name <substr> [--expires-in-hours N]` —
       verified live (URLSession-direct; slash-path not generator-safe)
@@ -85,6 +89,8 @@ All four verified live against the real token.
       errors, model decoding (incl. `BuildAction` steps + subactions), `AuthMiddleware`, and the
       full networked layer (apps/builds/build/caches/cancel+208/start/public-url/download/step-log)
       via **Replay** synthetic stubs (no HAR, no private data). Replay is a test-only dependency.
+      The `start`/`cancel` stubs were confirmed to match live API behaviour by the 2026-07-15
+      round-trip, so no recorded (HAR) fixtures are needed for these write ops.
 - [x] `README.md`: usage + `artifacts pull` example + `--json`/`jq` + **install** section
       (Homebrew + `mise` github backend)
 - [x] Release automation — `mise/tasks/package` builds a universal (arm64+x86_64) binary via

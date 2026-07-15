@@ -154,18 +154,27 @@ real token** (read endpoints only; no build was triggered). Legend: ✅ confirme
 - **`workflowId` is `null` when a build uses `codemagic.yaml`** — the yaml workflow id lives in
   `fileWorkflowId` instead.
 - **`instanceType` is a real field on the build object** (so the brief wasn't wrong that it exists).
-  Still **unconfirmed** whether `POST /builds` accepts it as *input* — not tested, since that would
-  trigger a real build. Kept out of the request body for now.
+  Still **unconfirmed** whether `POST /builds` accepts it as *input* — the client doesn't yet send
+  it (no CLI flag). No longer cost-blocked: the 2026-07-15 live test showed a build can be started
+  and canceled within ~8s. Kept out of the request body until a flag is added.
 - **Builds & Applications APIs are "preview".** The v1 docs state they are "available for
   developers to preview … may change without advance notice." Treat as unstable; pin with tests.
 - **`public-url` `expiresAt` type asymmetry** — integer (UNIX seconds) in the request, ISO-8601
   string in the response.
 - **v1 docs are partly stale** — the artifacts page was last updated 2023-03-14 (others May/June 2026).
 
+### Verified live 2026-07-15
+
+- **`POST /builds` and `POST /builds/:id/cancel`** — confirmed live via a start→cancel→show
+  round-trip on a real app. Start returns a body the client reads as `{ "buildId": "…" }`; cancel
+  returns 200 on a running build (→ `.cancelled`) and the build then reports `status: canceled`.
+  The 208 (already-finished) cancel path remains covered by a synthetic Replay stub only.
+  The Replay `start`/`cancel` stubs match this live behaviour, so no HAR fixtures are needed.
+
 ### Still not verified
 
-- Whether `POST /builds` accepts `instanceType` / the exact success body of `POST /builds` and
-  `POST /builds/:id/cancel` (would trigger/mutate real builds — deferred to integration tests).
+- Whether `POST /builds` accepts `instanceType` as an *input* param (the client doesn't send it —
+  see above; add a CLI flag first, then confirm live).
 
 ### Design caveats (not corrections)
 
