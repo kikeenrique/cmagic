@@ -10,15 +10,15 @@ Legend: ✅ done · ⏳ pending · 🔑 blocked on a live `CM_TOKEN`.
 
 **Phases 0–4 complete.** The `cmagic` CLI implements the full command surface
 — `apps`, `builds`, `build show`/`show --steps`/`start`/`cancel`/`logs`, `artifacts pull/public-url`,
-`caches list/delete` — each with `--json` output, all verified live against a real token (except
-`build start`, which would trigger a real build). The `CodemagicApiKit` library wraps a
+`caches list/delete` — each with `--json` output, all verified live against a real token
+(`build start` verified live on 2026-07-15 via a start→cancel→show round-trip that consumed
+no real build minutes). The `CodemagicApiKit` library wraps a
 swift-openapi-generator client (auth middleware + config-file token + artefact downloader). GitHub
 Actions CI runs build + test. 23 offline tests, ~83% library line coverage (networked paths stubbed
 with Replay). Released as `0.1.0` (tag `v0.1.0`) with prebuilt universal binaries; consumed by
 `mise` and a separately-maintained Homebrew tap.
 
-**Remaining:** only the deferred `POST /builds instanceType` live-check (would trigger a real build)
-and the open questions below (revisit v3; preview-API stability).
+**Remaining:** only the open questions below (revisit v3; preview-API stability).
 
 ## Phase 0 — Research & API specs ✅
 
