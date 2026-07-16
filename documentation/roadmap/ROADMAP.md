@@ -21,9 +21,7 @@ with Replay). Released as `0.1.0` (tag `v0.1.0`) with prebuilt universal binarie
 `mise` and a separately-maintained Homebrew tap.
 
 **Remaining:** the optional `POST /builds instanceType` param (expose a CLI flag, then confirm it
-live — no longer cost-blocked); a test target for the `cmagic` executable (today only
-`CodemagicApiKit` is tested — CLI command-layer glue like argument parsing and the `--build-id`
-branch is unexercised); plus the open questions below (revisit v3; preview-API stability).
+live — no longer cost-blocked), plus the open questions below (revisit v3; preview-API stability).
 
 ## Phase 0 — Research & API specs ✅
 
@@ -117,10 +115,6 @@ All four verified live against the real token.
 - [x] CI (build + test) on the standalone repo — GitHub Actions (`.github/workflows/ci.yml`),
       `swift build` + `swift test` on `macos-26`/Xcode 26.6, with SwiftPM caching. Action versions
       kept current: `actions/checkout@v7`, `actions/cache@v6`, `jdx/mise-action@v4`.
-- [ ] ⏳ Add a `cmagicTests` target for the executable — the CLI command layer (argument parsing,
-      option defaults, the `artifacts --build-id` vs latest-build branch) has no coverage today; all
-      23 tests live in `CodemagicApiKitTests`. Testing `run()` bodies also needs `Session` made
-      injectable so the network/config isn't hit.
 
 Repo public, default branch `main`. cmagic publishes `v`-prefixed tagged releases with prebuilt
 universal binaries; downstream packaging (a separate Homebrew tap, `mise`) consumes them.
