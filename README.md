@@ -50,6 +50,9 @@ cmagic build cancel <buildId>
 # the flagship: pull the latest build's artefact for a branch, auto-unzipping zip/xcresult
 cmagic artifacts pull --app <id> --branch main --name TestResults -o ./out
 cmagic artifacts public-url --app <id> --branch main --name TestResults --expires-in-hours 24
+# ...or target a specific build by id (--branch/--app not needed)
+cmagic artifacts pull --build-id <buildId> --name TestResults -o ./out
+cmagic artifacts public-url --build-id <buildId> --name TestResults
 
 cmagic caches list --app <id>
 cmagic caches delete --app <id> [--cache-id <id>]

@@ -17,8 +17,11 @@ struct Artifacts: AsyncParsableCommand {
         @Option(name: [.short, .long], help: "Application id (defaults to `app` in config).")
         var app: String?
 
-        @Option(name: [.short, .long], help: "Branch to pull the latest build from (defaults to `branch` in config).")
+        @Option(name: [.short, .long], help: "Branch to pull the latest build from (defaults to `branch` in config). Ignored when --build-id is set.")
         var branch: String?
+
+        @Option(name: .long, help: "Pull from this specific build id instead of the latest build.")
+        var buildId: String?
 
         @Option(name: [.short, .long], help: "Artefact name (substring, case-insensitive).")
         var name: String
@@ -33,11 +36,17 @@ struct Artifacts: AsyncParsableCommand {
 
         func run() async throws {
             let (config, cm) = try Session.loadConfigAndClient()
-            let appId = try Session.resolveAppId(app, config: config)
-            let branchFilter = branch ?? config.branch
 
-            guard let build = try await cm.latestBuild(appId: appId, branch: branchFilter) else {
-                throw CleanExit.message("No build found for app \(appId)\(branchFilter.map { " on branch \($0)" } ?? "").")
+            let build: Codemagic.Build
+            if let buildId {
+                build = try await cm.build(id: buildId)
+            } else {
+                let appId = try Session.resolveAppId(app, config: config)
+                let branchFilter = branch ?? config.branch
+                guard let latest = try await cm.latestBuild(appId: appId, branch: branchFilter) else {
+                    throw CleanExit.message("No build found for app \(appId)\(branchFilter.map { " on branch \($0)" } ?? "").")
+                }
+                build = latest
             }
             let artefacts = build.artefacts ?? []
             guard let artefact = artefacts.first(where: { ($0.name ?? "").localizedCaseInsensitiveContains(name) }) else {
@@ -78,8 +87,11 @@ struct Artifacts: AsyncParsableCommand {
         @Option(name: [.short, .long], help: "Application id (defaults to `app` in config).")
         var app: String?
 
-        @Option(name: [.short, .long], help: "Branch (defaults to `branch` in config).")
+        @Option(name: [.short, .long], help: "Branch (defaults to `branch` in config). Ignored when --build-id is set.")
         var branch: String?
+
+        @Option(name: .long, help: "Use this specific build id instead of the latest build.")
+        var buildId: String?
 
         @Option(name: [.short, .long], help: "Artefact name (substring, case-insensitive).")
         var name: String
@@ -91,11 +103,17 @@ struct Artifacts: AsyncParsableCommand {
 
         func run() async throws {
             let (config, cm) = try Session.loadConfigAndClient()
-            let appId = try Session.resolveAppId(app, config: config)
-            let branchFilter = branch ?? config.branch
 
-            guard let build = try await cm.latestBuild(appId: appId, branch: branchFilter) else {
-                throw CleanExit.message("No build found for app \(appId)\(branchFilter.map { " on branch \($0)" } ?? "").")
+            let build: Codemagic.Build
+            if let buildId {
+                build = try await cm.build(id: buildId)
+            } else {
+                let appId = try Session.resolveAppId(app, config: config)
+                let branchFilter = branch ?? config.branch
+                guard let latest = try await cm.latestBuild(appId: appId, branch: branchFilter) else {
+                    throw CleanExit.message("No build found for app \(appId)\(branchFilter.map { " on branch \($0)" } ?? "").")
+                }
+                build = latest
             }
             let artefacts = build.artefacts ?? []
             guard let artefact = artefacts.first(where: { ($0.name ?? "").localizedCaseInsensitiveContains(name) }),
