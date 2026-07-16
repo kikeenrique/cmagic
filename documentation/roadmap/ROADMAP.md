@@ -12,14 +12,18 @@ Legend: ✅ done · ⏳ pending · 🔑 blocked on a live `CM_TOKEN`.
 — `apps`, `builds`, `build show`/`show --steps`/`start`/`cancel`/`logs`, `artifacts pull/public-url`,
 `caches list/delete` — each with `--json` output, all verified live against a real token
 (`build start` verified live on 2026-07-15 via a start→cancel→show round-trip that consumed
-no real build minutes). The `CodemagicApiKit` library wraps a
+no real build minutes). Both `artifacts` subcommands accept an optional `--build-id` to target a
+specific build (instead of the latest build on a branch), fetched via the already-tested
+`Codemagic.build(id:)`. The `CodemagicApiKit` library wraps a
 swift-openapi-generator client (auth middleware + config-file token + artefact downloader). GitHub
 Actions CI runs build + test. 23 offline tests, ~83% library line coverage (networked paths stubbed
 with Replay). Released as `0.1.0` (tag `v0.1.0`) with prebuilt universal binaries; consumed by
 `mise` and a separately-maintained Homebrew tap.
 
 **Remaining:** the optional `POST /builds instanceType` param (expose a CLI flag, then confirm it
-live — no longer cost-blocked), plus the open questions below (revisit v3; preview-API stability).
+live — no longer cost-blocked); a test target for the `cmagic` executable (today only
+`CodemagicApiKit` is tested — CLI command-layer glue like argument parsing and the `--build-id`
+branch is unexercised); plus the open questions below (revisit v3; preview-API stability).
 
 ## Phase 0 — Research & API specs ✅
 
@@ -65,7 +69,8 @@ Verified live against a real token (July 2026, read endpoints only). See PROCESS
 - [x] `cmagic build show <buildId>` — one build's detail (incl. artefacts + human sizes); `--steps`
       renders each build step's status + duration (v1 `buildActions`, verified live, 16 steps)
 - [x] `cmagic artifacts pull [--app <id>] [--branch <b>] --name <substr> [-o <dir>]` — the core
-      one-liner (latest build for branch → match artefact by name → download → auto-unzip zip/xcresult)
+      one-liner (latest build for branch → match artefact by name → download → auto-unzip zip/xcresult).
+      Also accepts `--build-id <id>` to pull from a specific build (skips app/branch resolution).
 
 All four verified live against the real token.
 
@@ -76,7 +81,8 @@ All four verified live against the real token.
       canceled ~8s in, so no real build minutes were consumed)
 - [x] `cmagic build cancel <buildId>` — verified live (208 → "already finished")
 - [x] `cmagic artifacts public-url [--app] [--branch] --name <substr> [--expires-in-hours N]` —
-      verified live (URLSession-direct; slash-path not generator-safe)
+      verified live (URLSession-direct; slash-path not generator-safe). Also accepts `--build-id <id>`
+      to mint a URL for an artefact on a specific build (skips app/branch resolution).
 - [x] `cmagic caches list|delete [--app] [--cache-id]` — list verified live; delete implemented (202)
 - [x] `cmagic build logs <buildId> [--step N] [--raw]` — per-step logs via each step's `logUrl`
       (URLSession-direct; system steps carry `logUrl`, script steps carry it on their subaction);
@@ -111,6 +117,10 @@ All four verified live against the real token.
 - [x] CI (build + test) on the standalone repo — GitHub Actions (`.github/workflows/ci.yml`),
       `swift build` + `swift test` on `macos-26`/Xcode 26.6, with SwiftPM caching. Action versions
       kept current: `actions/checkout@v7`, `actions/cache@v6`, `jdx/mise-action@v4`.
+- [ ] ⏳ Add a `cmagicTests` target for the executable — the CLI command layer (argument parsing,
+      option defaults, the `artifacts --build-id` vs latest-build branch) has no coverage today; all
+      23 tests live in `CodemagicApiKitTests`. Testing `run()` bodies also needs `Session` made
+      injectable so the network/config isn't hit.
 
 Repo public, default branch `main`. cmagic publishes `v`-prefixed tagged releases with prebuilt
 universal binaries; downstream packaging (a separate Homebrew tap, `mise`) consumes them.
