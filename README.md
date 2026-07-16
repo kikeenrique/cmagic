@@ -21,11 +21,13 @@ apps — from the terminal, without opening the Codemagic web dashboard or hand-
 This is an **unofficial** client, not affiliated with or supported by Codemagic; it simply talks to
 their public REST API.
 
-A Swift **library (`CodemagicApiKit`)** + thin **executable (`cmagic`)** for the
-[Codemagic](https://codemagic.io) REST API — inspect builds and pull their artifacts (e.g. a red
-build's `TestResults-*.xcresult`) straight from the terminal. Codemagic ships no official CLI for
-querying the service, so today the only remote-access route is raw `curl`; this package replaces
-that with a typed Swift client.
+## Overview
+
+The package is a Swift **library (`CodemagicApiKit`)** plus a thin **executable (`cmagic`)** built on
+top of the [Codemagic](https://codemagic.io) REST API — inspect builds and pull their artifacts
+(e.g. a red build's `TestResults-*.xcresult`) straight from the terminal. Codemagic ships no
+official CLI for querying the service, so the only other remote-access route is raw `curl`; this
+package replaces that with a typed Swift client.
 
 ## Install
 
@@ -150,8 +152,5 @@ Account settings / Integrations → API token). The token is read from a **confi
 - **Format (TOML):** `token = "cm_xxxxxxxx"`
 - Keep it `chmod 600`; the CLI warns if it is group/world-readable, fails clearly when absent, and
   never logs the token.
-
-There is intentionally no `--token` flag or `CM_TOKEN` env var (see
-[`documentation/roadmap/ROADMAP.md`](documentation/roadmap/ROADMAP.md#authentication-decided)).
 
 [swift-openapi-generator]: https://github.com/apple/swift-openapi-generator
