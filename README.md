@@ -1,5 +1,11 @@
 # Codemagic Swift CLI
 
+**cmagic** is a command-line tool for [Codemagic](https://codemagic.io), the CI/CD service for
+mobile apps. It lets you check on your builds and grab their output — logs, test results, built
+apps — from the terminal, without opening the Codemagic web dashboard or hand-writing API calls.
+This is an **unofficial** client, not affiliated with or supported by Codemagic; it simply talks to
+their public REST API.
+
 A Swift **library (`CodemagicApiKit`)** + thin **executable (`cmagic`)** for the
 [Codemagic](https://codemagic.io) REST API — inspect builds and pull their artifacts (e.g. a red
 build's `TestResults-*.xcresult`) straight from the terminal. Codemagic ships no official CLI for
