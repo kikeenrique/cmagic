@@ -112,7 +112,7 @@ to swift-openapi-generator.
 `openapi-v1.patch.json` (enrichment), then re-run the script. Re-scraping is also how we detect
 when Codemagic's docs drift.
 
-## 5. Verification (July 2026)
+## 5. Verification (July–August 2026)
 
 Every factual claim in this doc and in `roadmap/codemagic-swift-cli-brief.md` was audited against
 primary sources: the downloaded v1 docs (`v1-api-docs/*.html`), the extracted v3 spec
@@ -136,7 +136,7 @@ real token** (read endpoints only; no build was triggered). Legend: ✅ confirme
 | v3: OpenAPI 3.1.0, 64 paths, 212 schemas, base `/api/v3`, `x-auth-token`; no trigger/cancel/artifacts route; artifacts via `short_lived_download_url`; builds at `/teams/{team_id}/builds` with `app_id,status,workflow_id,branch,tag,label` filters + cursor paging | openapi-v3.json |
 | **`GET /apps` works (200)** → `{applications[], builds[]}`; app has `_id`,`appName`,`workflowIds`,`branches` | live call |
 | **`GET /apps/:id` works (200)** → `{application}` incl. `branches[]` | live call |
-| **`GET /builds?appId=<id>` works (200)** → `{applications[], builds[], nextPageUrl}` (cursor paging, 30/page) | live call |
+| **`GET /builds?appId=<id>` works (200)** → `{applications[], builds[], nextPageUrl}` (30/page; the cursor is `?appId=<id>&skip=<n>`) | live call |
 | **`GET /builds/:id` works (200)** → `{application, build}` | live call |
 | Build id field is `_id` (24-char ObjectId), not `id`; `status` ∈ {finished, failed, canceled, timeout, …} | live call |
 | **`GET /builds/:id` returns a `buildActions[]` array** (ordered steps; a 16-step build seen live). Each step: `name`,`type`,`status`,`startedAt`,`finishedAt`,`logUrl`,`subactions[]`. System steps carry `logUrl` directly; script steps carry it on their single subaction (which also has a `command`). Modeled as `BuildAction` in `openapi-v1.patch.json` | live call |
@@ -211,10 +211,12 @@ swift Scripts/GenerateOpenAPIV1.swift
 ## 7. Next steps
 
 Task-level progress (achieved + pending) is tracked in
-[`roadmap/ROADMAP.md`](./roadmap/ROADMAP.md). The spec is now validated against live responses and
-the swift-openapi-generator client (plus the `URLSession`-direct download / public-url / step-log
-helpers) is wired and shipping the full command surface, with GitHub Actions CI running build +
-test. Remaining work — `mise` distribution and a README install section — is tracked in the
-roadmap.
+[`roadmap/ROADMAP.md`](./roadmap/ROADMAP.md). The spec is validated against live responses and the
+swift-openapi-generator client (plus the `URLSession`-direct download / public-url / step-log
+helpers) ships the full command surface, distributed as tagged universal binaries with GitHub
+Actions running build + test. Every endpoint the CLI uses is now live-confirmed, `instanceType`
+included, so no spec question is outstanding. What remains is release work and two judgement calls
+— whether to generate a second client for v3's read models, and how far to trust the "preview"
+build APIs — both tracked in the roadmap.
 
 [swift-openapi-generator]: https://github.com/apple/swift-openapi-generator

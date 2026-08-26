@@ -6,23 +6,27 @@ the verification audit are in [`../PROCESS.md`](../PROCESS.md).
 
 Legend: ✅ done · ⏳ pending · 🔑 blocked on a live `CM_TOKEN`.
 
-## Status (July 2026)
+## Status (August 2026)
 
-**Phases 0–4 complete.** The `cmagic` CLI implements the full command surface
-— `apps`, `builds`, `build show`/`show --steps`/`start`/`cancel`/`logs`, `artifacts pull/public-url`,
-`caches list/delete` — each with `--json` output, all verified live against a real token
-(`build start` verified live on 2026-07-15 via a start→cancel→show round-trip that consumed
-no real build minutes). Both `artifacts` subcommands accept an optional `--build-id` to target a
-specific build (instead of the latest build on a branch), fetched via the already-tested
+**Phases 0–4 complete; Phase 5 code complete, its release pending.** The `cmagic` CLI implements
+the full command surface — `apps`, `builds`, `build show`/`show --steps`/`start`/`cancel`/`logs`,
+`artifacts pull/public-url`, `caches list/delete` — each with `--json` output, all verified live
+against a real token (`build start` verified live on 2026-07-15 via a start→cancel→show
+round-trip that consumed no real build minutes). Both `artifacts` subcommands accept an optional
+`--build-id` to target a specific build (instead of the latest build on a branch), fetched via the already-tested
 `Codemagic.build(id:)`. The `CodemagicApiKit` library wraps a
 swift-openapi-generator client (auth middleware + config-file token + artefact downloader). GitHub
 Actions CI runs build + test. 28 offline tests, ~83% library line coverage (networked paths stubbed
-with Replay). Released as `0.1.0` (tag `v0.1.0`) with prebuilt universal binaries; consumed by
-`mise` and a separately-maintained Homebrew tap.
+with Replay). Released through `0.2.0` (tags `v0.1.0`, `v0.2.0`) with prebuilt universal binaries;
+consumed by `mise` and a separately-maintained Homebrew tap.
 
-**Remaining:** the open questions below (revisit v3; preview-API stability). The command surface is
-complete: `POST /builds instanceType` is now exposed as `build start --instance-type` (confirmed
-live), and `cmagic --version` reports the release the binary was built from.
+Every endpoint the CLI uses is live-confirmed, `instanceType` included, so no spec question is
+outstanding (see PROCESS.md §5). `cmagic --version` reports the release the binary was built from.
+
+**Remaining:** cut `0.3.0` — the Phase 5 work is committed but unreleased, and `builds --json`
+changed shape (`{builds, nextPage}` instead of a bare array), so it wants a minor bump with that
+called out in the notes. Beyond that, only the open questions below (revisit v3; preview-API
+stability).
 
 ## Phase 0 — Research & API specs ✅
 
@@ -122,6 +126,32 @@ All four verified live against the real token.
 
 Repo public, default branch `main`. cmagic publishes `v`-prefixed tagged releases with prebuilt
 universal binaries; downstream packaging (a separate Homebrew tap, `mise`) consumes them.
+
+## Phase 5 — Paging & version reporting ⏳
+
+August 2026. Prompted by `cmagic builds --limit 300` returning 30 builds.
+
+- [x] Page `GET /builds` — the API serves 30 per call and its `nextPageUrl` cursor is
+      `?appId=<id>&skip=<n>`, which honours arbitrary offsets, so paging is server-side:
+      `--limit` walks the cursor (`0` = the whole history), `--next-page <n>` starts `n` builds in,
+      and the offset to resume from comes back as a `next-page:` line / `nextPage` in `--json`,
+      counted from the rows shown so chained calls neither skip nor repeat a build. `--max-pages`
+      (default 20) bounds a walk — it only bites with `--branch`, still client-side since the API
+      filters by app only. Verified live: `--limit 25` + `--next-page 25` reassembles exactly into
+      `--limit 35`.
+- [x] Establish there is **no page-size parameter** — `limit`, `perPage`, `per_page`, `pageSize`,
+      `count`, `take` were each sent live and ignored (30 builds every time)
+- [x] `build start --instance-type <t>` — added to the spec overlay and confirmed live 2026-08-26
+      (a build requested as `mac_mini_m1` on a workflow defaulting to `mac_mini_m2` reported
+      `mac_mini_m1`; canceled before it started, no billable minutes)
+- [x] `cmagic --version` — reports `cmagicVersion` (`Sources/cmagic/Version.swift`), the one place
+      the number lives in the tree. Releases are still cut from tags, so `mise run release` refuses
+      to tag while the tag and the constant disagree, keeping a published binary from reporting a
+      stale version.
+- [x] Docs kept in step — README usage/paging/layout, PROCESS.md §5 (live findings, nothing left
+      unverified), this roadmap
+- [ ] Cut `0.3.0` — bump `cmagicVersion` to `0.3.0`, `mise run release v0.3.0`, and note the
+      `builds --json` shape change in the release notes
 
 ## Authentication (decided)
 

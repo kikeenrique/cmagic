@@ -39,7 +39,7 @@ Prebuilt universal (arm64 + x86_64) macOS binaries are attached to each
 brew install kikeenrique/tap/cmagic
 
 # mise (github backend; ubi: also works but is deprecated upstream)
-mise use -g github:kikeenrique/cmagic        # latest, or pin @v0.1.0
+mise use -g github:kikeenrique/cmagic        # latest, or pin @v0.2.0
 ```
 
 Or build from source (see below) and copy `.build/release/cmagic` onto your `PATH`.
@@ -47,8 +47,8 @@ Or build from source (see below) and copy `.build/release/cmagic` onto your `PAT
 ## Build, test, run
 
 ```bash
-swift build
-swift test
+swift build            # or: mise run build
+swift test             # or: mise run test
 ```
 
 ## Usage
@@ -56,6 +56,7 @@ swift test
 The token is read from the config file (see [Authentication](#authentication)).
 
 ```bash
+cmagic --version                              # the release this binary was built from
 cmagic apps                                   # list apps: <id>  <name>
 cmagic builds --app <id> --limit 10           # recent builds (add --branch <b> to filter)
 cmagic builds --app <id> --next-page 60 --limit 20  # builds 61-80 (the API's own skip)
@@ -122,7 +123,7 @@ Sources/
     openapi-generator-config.yaml
     Codemagic.swift              # client wrapper (base URL + auth middleware)
     Codemagic+Convenience.swift  # model-returning API: apps/builds/caches/cancel/start/…
-    BuildPaging.swift            # cursor paging over GET /builds (nextPageUrl)
+    BuildPaging.swift            # GET /builds paging — skip offsets off the nextPageUrl cursor
     AuthMiddleware.swift         # injects x-auth-token
     Configuration.swift          # CmagicConfig — loads token from the config file
     ArtefactDownloader.swift     # URLSession download of build.artefacts[].url
