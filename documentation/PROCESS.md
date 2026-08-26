@@ -153,10 +153,11 @@ real token** (read endpoints only; no build was triggered). Legend: ✅ confirme
   as a query filter even though the docs only mention it as the `POST /builds` body param.
 - **`workflowId` is `null` when a build uses `codemagic.yaml`** — the yaml workflow id lives in
   `fileWorkflowId` instead.
-- **`instanceType` is a real field on the build object** (so the brief wasn't wrong that it exists).
-  Still **unconfirmed** whether `POST /builds` accepts it as *input* — the client doesn't yet send
-  it (no CLI flag). No longer cost-blocked: the 2026-07-15 live test showed a build can be started
-  and canceled within ~8s. Kept out of the request body until a flag is added.
+- **`instanceType` is a real field on the build object, and `POST /builds` accepts it as input** —
+  absent from the v1 docs' parameter table, but confirmed live 2026-08-26: a build started with
+  `instanceType: mac_mini_m1` on a workflow that defaults to `mac_mini_m2` came back reporting
+  `mac_mini_m1`, and was canceled before it started (no billable minutes). Added to
+  `openapi-v1.patch.json` and exposed as `build start --instance-type`.
 - **Builds & Applications APIs are "preview".** The v1 docs state they are "available for
   developers to preview … may change without advance notice." Treat as unstable; pin with tests.
 - **`public-url` `expiresAt` type asymmetry** — integer (UNIX seconds) in the request, ISO-8601
@@ -171,10 +172,18 @@ real token** (read endpoints only; no build was triggered). Legend: ✅ confirme
   The 208 (already-finished) cancel path remains covered by a synthetic Replay stub only.
   The Replay `start`/`cancel` stubs match this live behaviour, so no HAR fixtures are needed.
 
+### Verified live 2026-08-26
+
+- **`POST /builds` accepts `instanceType`** — start→show→cancel round-trip; the requested machine
+  overrode the workflow's own (see the corrected entry above).
+- **`GET /builds` has no page-size parameter** — `limit`, `perPage`, `per_page`, `pageSize`, `count`
+  and `take` were each sent live and ignored (30 builds returned every time). Its `nextPageUrl`
+  cursor is `?appId=<id>&skip=<n>`, and `skip` honours arbitrary offsets, not just multiples of 30 —
+  so `cmagic builds --next-page <n>` skips server-side.
+
 ### Still not verified
 
-- Whether `POST /builds` accepts `instanceType` as an *input* param (the client doesn't send it —
-  see above; add a CLI flag first, then confirm live).
+- Nothing outstanding on the endpoints the CLI uses.
 
 ### Design caveats (not corrections)
 

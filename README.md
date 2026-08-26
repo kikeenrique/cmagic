@@ -62,7 +62,7 @@ cmagic builds --app <id> --next-page 60 --limit 20  # builds 61-80 (the API's ow
 cmagic build show <buildId>                    # one build's detail + artefacts
 cmagic build show <buildId> --steps            # + each step's status and duration
 cmagic build logs <buildId> [--step N] [--raw]  # step logs (plain text; --raw keeps colour markup)
-cmagic build start --app <id> --workflow <w> --branch main
+cmagic build start --app <id> --workflow <w> --branch main [--instance-type mac_mini_m2]
 cmagic build cancel <buildId>
 
 # the flagship: pull the latest build's artefact for a branch, auto-unzipping zip/xcresult
@@ -130,10 +130,11 @@ Sources/
     StepLogs.swift               # URLSession-direct per-step build-log fetch
   cmagic/                        # executable (thin ArgumentParser front-end)
     Cmagic.swift                 # root + apps/builds/build(show/start/cancel/logs)
+    Version.swift                # cmagicVersion — what `cmagic --version` reports
     ArtifactsCommand.swift       # artifacts pull/public-url + unzip
     CachesCommand.swift          # caches list/delete
     OutputOptions.swift          # shared --json flag + emitter
-Tests/CodemagicApiKitTests/      # 26 offline tests (config, decoding, auth, Replay stubs)
+Tests/CodemagicApiKitTests/      # 28 offline tests (config, decoding, auth, Replay stubs)
 Scripts/
   GenerateOpenAPIV1.swift        # scrapes the v1 HTML docs → OpenAPI, merging a hand-authored patch
 documentation/

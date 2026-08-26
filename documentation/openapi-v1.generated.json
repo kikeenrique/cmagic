@@ -779,6 +779,10 @@
                     "description" : "Optional. Specify environment variables, variable groups, and software versions to override or define in workflow settings.",
                     "type" : "object"
                   },
+                  "instanceType" : {
+                    "description" : "Optional. Build machine to run on (e.g. mac_mini_m2). Missing from the v1 docs' parameter table, but a real field on the build object and accepted as input — confirmed live.",
+                    "type" : "string"
+                  },
                   "labels" : {
                     "description" : "Optional. Specify labels to be included for the build in addition to existing labels.",
                     "items" : {

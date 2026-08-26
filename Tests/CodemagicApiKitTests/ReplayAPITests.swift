@@ -128,6 +128,16 @@ import Testing
     }
 
     @Test(.replay(stubs: [
+        .post("https://api.codemagic.io/builds", 200, jsonHeaders, { #"{ "buildId": "new-build-456" }"# })
+    ]))
+    func startSendsInstanceType() async throws {
+        let id = try await client().startBuild(
+            appId: "demo", workflowId: "wf-1", branch: "main", tag: nil, instanceType: "mac_mini_m2"
+        )
+        #expect(id == "new-build-456")
+    }
+
+    @Test(.replay(stubs: [
         .get("https://api.codemagic.io/apps/demo/caches", 200, jsonHeaders, {
             """
             { "caches": [ { "_id": "c1", "appId": "demo", "workflowId": "wf-1", "platform": "macOS", "size": 2048 } ] }

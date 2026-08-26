@@ -101,4 +101,13 @@ import Testing
             try JSONDecoder().decode(Codemagic.Artefact.self, from: json)
         }
     }
+
+    @Test func startBuildPayloadCarriesInstanceType() throws {
+        let payload = Operations.postBuilds.Input.Body.jsonPayload(
+            appId: "demo", branch: "main", instanceType: "mac_mini_m2", tag: nil, workflowId: "wf-1"
+        )
+        let json = String(decoding: try JSONEncoder().encode(payload), as: UTF8.self)
+        #expect(json.contains(#""instanceType":"mac_mini_m2""#))
+        #expect(json.contains(#""workflowId":"wf-1""#))
+    }
 }

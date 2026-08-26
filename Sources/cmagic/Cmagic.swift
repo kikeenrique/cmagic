@@ -7,6 +7,7 @@ struct Cmagic: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "cmagic",
         abstract: "Inspect Codemagic builds and pull their artefacts from the terminal.",
+        version: cmagicVersion,
         subcommands: [Apps.self, Builds.self, Build.self, Artifacts.self, Caches.self]
     )
 }
@@ -171,6 +172,9 @@ struct Build: AsyncParsableCommand {
         @Option(name: [.short, .long], help: "Tag to build (one of --branch/--tag required).")
         var tag: String?
 
+        @Option(name: .long, help: "Build machine to run on, e.g. mac_mini_m2 (defaults to the workflow's).")
+        var instanceType: String?
+
         @OptionGroup var out: OutputOptions
 
         func validate() throws {
@@ -180,9 +184,15 @@ struct Build: AsyncParsableCommand {
         }
 
         func run() async throws {
-            let (config, cm) = try Session.loadConfigAndClient()
+            let (config, cmagic) = try Session.loadConfigAndClient()
             let appId = try Session.resolveAppId(app, config: config)
-            let buildId = try await cm.startBuild(appId: appId, workflowId: workflow, branch: branch, tag: tag)
+            let buildId = try await cmagic.startBuild(
+                appId: appId,
+                workflowId: workflow,
+                branch: branch,
+                tag: tag,
+                instanceType: instanceType
+            )
             if out.json { try out.emit(["buildId": buildId]); return }
             print(buildId)
         }

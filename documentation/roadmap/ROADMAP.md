@@ -16,12 +16,13 @@ no real build minutes). Both `artifacts` subcommands accept an optional `--build
 specific build (instead of the latest build on a branch), fetched via the already-tested
 `Codemagic.build(id:)`. The `CodemagicApiKit` library wraps a
 swift-openapi-generator client (auth middleware + config-file token + artefact downloader). GitHub
-Actions CI runs build + test. 26 offline tests, ~83% library line coverage (networked paths stubbed
+Actions CI runs build + test. 28 offline tests, ~83% library line coverage (networked paths stubbed
 with Replay). Released as `0.1.0` (tag `v0.1.0`) with prebuilt universal binaries; consumed by
 `mise` and a separately-maintained Homebrew tap.
 
-**Remaining:** the optional `POST /builds instanceType` param (expose a CLI flag, then confirm it
-live — no longer cost-blocked), plus the open questions below (revisit v3; preview-API stability).
+**Remaining:** the open questions below (revisit v3; preview-API stability). The command surface is
+complete: `POST /builds instanceType` is now exposed as `build start --instance-type` (confirmed
+live), and `cmagic --version` reports the release the binary was built from.
 
 ## Phase 0 — Research & API specs ✅
 
@@ -45,9 +46,9 @@ Verified live against a real token (July 2026, read endpoints only). See PROCESS
 - [x] Confirm `GET /builds` and `GET /builds/:id` exist and their shape; `?appId=` filters (all 200; `nextPageUrl` paging)
 - [x] Confirm v1 build field names (`_id` not `id`; artifact array is **`artefacts`**; `status` ∈ finished/failed/canceled/timeout)
 - [x] Tighten the `Build`/`Artefact` schemas in `openapi-v1.patch.json` from real responses
-- [ ] Confirm `POST /builds` accepts `instanceType` (still pending, but no longer blocked on cost:
-      the 2026-07-15 live test showed start→cancel is cheap. Deferred only because `startBuild`/the
-      CLI don't yet expose an `instanceType` param — add the flag first, then confirm live.)
+- [x] Confirm `POST /builds` accepts `instanceType` — verified live 2026-08-26: `build start
+      --instance-type mac_mini_m1` on a workflow defaulting to `mac_mini_m2` produced a build
+      reporting `mac_mini_m1`, canceled before it started (no billable minutes)
 
 ## Phase 1 — Package scaffolding & generated client ✅
 

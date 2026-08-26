@@ -3,6 +3,16 @@
 #USAGE arg "<version>" help="Version tag to create and push, e.g. v0.1.0"
 set -euo pipefail
 
+# The binary reports cmagicVersion, so refuse to tag while it disagrees with the tag —
+# otherwise a published `cmagic --version` lies about which release it is.
+tagged="${usage_version#v}"
+declared=$(sed -n 's/^let cmagicVersion = "\(.*\)"$/\1/p' Sources/cmagic/Version.swift)
+if [ "$tagged" != "$declared" ]; then
+  echo "version mismatch: tag says $tagged, Sources/cmagic/Version.swift says $declared" >&2
+  echo "bump cmagicVersion to $tagged (and commit) before tagging" >&2
+  exit 1
+fi
+
 git tag "$usage_version"
 git push origin "$usage_version"
 echo "pushed tag $usage_version — the release workflow will build and attach assets"

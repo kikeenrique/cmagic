@@ -66,9 +66,17 @@ public extension Codemagic {
     }
 
     /// Start a build. Returns the new build id.
-    func startBuild(appId: String, workflowId: String, branch: String?, tag: String?) async throws -> String {
+    /// - Parameter instanceType: build machine to run on (e.g. `mac_mini_m2`), overriding
+    ///   the workflow's own; `nil` leaves the choice to the workflow.
+    func startBuild(
+        appId: String,
+        workflowId: String,
+        branch: String?,
+        tag: String?,
+        instanceType: String? = nil
+    ) async throws -> String {
         let body = Operations.postBuilds.Input.Body.jsonPayload(
-            appId: appId, branch: branch, tag: tag, workflowId: workflowId
+            appId: appId, branch: branch, instanceType: instanceType, tag: tag, workflowId: workflowId
         )
         return try await underlying.postBuilds(.init(body: .json(body))).ok.body.json.buildId
     }

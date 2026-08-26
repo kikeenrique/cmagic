@@ -59,6 +59,20 @@
     },
     "/builds": {
       "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "instanceType": {
+                    "type": "string",
+                    "description": "Optional. Build machine to run on (e.g. mac_mini_m2). Missing from the v1 docs' parameter table, but a real field on the build object and accepted as input — confirmed live."
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "content": {
