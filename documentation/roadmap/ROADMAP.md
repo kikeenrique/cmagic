@@ -8,7 +8,7 @@ Legend: ✅ done · ⏳ pending · 🔑 blocked on a live `CM_TOKEN`.
 
 ## Status (August 2026)
 
-**Phases 0–4 complete; Phase 5 code complete, its release pending.** The `cmagic` CLI implements
+**Phases 0–5 complete.** The `cmagic` CLI implements
 the full command surface — `apps`, `builds`, `build show`/`show --steps`/`start`/`cancel`/`logs`,
 `artifacts pull/public-url`, `caches list/delete` — each with `--json` output, all verified live
 against a real token (`build start` verified live on 2026-07-15 via a start→cancel→show
@@ -17,16 +17,13 @@ round-trip that consumed no real build minutes). Both `artifacts` subcommands ac
 `Codemagic.build(id:)`. The `CodemagicApiKit` library wraps a
 swift-openapi-generator client (auth middleware + config-file token + artefact downloader). GitHub
 Actions CI runs build + test. 28 offline tests, ~83% library line coverage (networked paths stubbed
-with Replay). Released through `0.2.0` (tags `v0.1.0`, `v0.2.0`) with prebuilt universal binaries;
-consumed by `mise` and a separately-maintained Homebrew tap.
+with Replay). Released through `0.3.0` with prebuilt universal binaries; consumed by `mise` and a
+separately-maintained Homebrew tap.
 
 Every endpoint the CLI uses is live-confirmed, `instanceType` included, so no spec question is
 outstanding (see PROCESS.md §5). `cmagic --version` reports the release the binary was built from.
 
-**Remaining:** cut `0.3.0` — the Phase 5 work is committed but unreleased, and `builds --json`
-changed shape (`{builds, nextPage}` instead of a bare array), so it wants a minor bump with that
-called out in the notes. Beyond that, only the open questions below (revisit v3; preview-API
-stability).
+**Remaining:** only the open questions below (revisit v3; preview-API stability).
 
 ## Phase 0 — Research & API specs ✅
 
@@ -127,7 +124,7 @@ All four verified live against the real token.
 Repo public, default branch `main`. cmagic publishes `v`-prefixed tagged releases with prebuilt
 universal binaries; downstream packaging (a separate Homebrew tap, `mise`) consumes them.
 
-## Phase 5 — Paging & version reporting ⏳
+## Phase 5 — Paging & version reporting ✅
 
 August 2026. Prompted by `cmagic builds --limit 300` returning 30 builds.
 
@@ -150,8 +147,9 @@ August 2026. Prompted by `cmagic builds --limit 300` returning 30 builds.
       stale version.
 - [x] Docs kept in step — README usage/paging/layout, PROCESS.md §5 (live findings, nothing left
       unverified), this roadmap
-- [ ] Cut `0.3.0` — bump `cmagicVersion` to `0.3.0`, `mise run release v0.3.0`, and note the
-      `builds --json` shape change in the release notes
+- [x] Cut `0.3.0` — `cmagicVersion` bumped, tagged `v0.3.0`. **Breaking:** `builds --json` now
+      emits `{builds, nextPage}` instead of a bare array, so `jq '.[]'` pipelines become
+      `jq '.builds[]'`
 
 ## Authentication (decided)
 

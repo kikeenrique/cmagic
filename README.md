@@ -39,7 +39,7 @@ Prebuilt universal (arm64 + x86_64) macOS binaries are attached to each
 brew install kikeenrique/tap/cmagic
 
 # mise (github backend; ubi: also works but is deprecated upstream)
-mise use -g github:kikeenrique/cmagic        # latest, or pin @v0.2.0
+mise use -g github:kikeenrique/cmagic        # latest, or pin @v0.3.0
 ```
 
 Or build from source (see below) and copy `.build/release/cmagic` onto your `PATH`.
