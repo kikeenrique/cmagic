@@ -110,7 +110,8 @@ All four verified live against the real token.
       <version>` tags + pushes (re-runnable: it reuses a tag already on HEAD, so a failed push
       can be retried with the same command). `.github/workflows/release.yml` runs `mise run
       package` on a `v*`
-      tag and attaches the assets via `gh release create` (SwiftPM cache in a release-scoped key
+      tag and attaches the assets, creating the release or refreshing an existing one's assets so
+      a re-pushed tag re-runs cleanly (SwiftPM cache in a release-scoped key
       that warm-starts from the CI dependency cache).
 - [x] Cut the first release — tag `v0.1.0`, universal binaries published to the GitHub release.
 - [x] Distribution consumers — `mise` via the `github:` backend
