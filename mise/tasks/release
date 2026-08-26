@@ -13,6 +13,19 @@ if [ "$tagged" != "$declared" ]; then
   exit 1
 fi
 
-git tag "$usage_version"
+# Re-runnable: a failed push (auth, network) leaves the tag behind, and re-tagging would
+# abort the retry. Reuse the tag when it already marks HEAD; refuse when it marks anything
+# else, since moving a published tag would repoint a release at different code.
+if existing=$(git rev-parse -q --verify "refs/tags/$usage_version"); then
+  if [ "$existing" != "$(git rev-parse HEAD)" ]; then
+    echo "tag $usage_version already exists on $(git log --oneline -1 "$usage_version")" >&2
+    echo "it is not HEAD — delete it deliberately or pick another version" >&2
+    exit 1
+  fi
+  echo "tag $usage_version already on HEAD — reusing it"
+else
+  git tag "$usage_version"
+fi
+
 git push origin "$usage_version"
 echo "pushed tag $usage_version — the release workflow will build and attach assets"

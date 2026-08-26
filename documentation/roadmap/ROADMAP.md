@@ -107,7 +107,9 @@ All four verified live against the real token.
       can't resolve the OpenAPI plugin), then packages it into **deterministic** tarballs (`gzip -n`,
       so both arch tarballs are byte-identical and share one sha256):
       `dist/cmagic-{aarch64,x86_64}-apple-darwin.tar.gz` + `SHA256SUMS`. `mise/tasks/release
-      <version>` tags + pushes. `.github/workflows/release.yml` runs `mise run package` on a `v*`
+      <version>` tags + pushes (re-runnable: it reuses a tag already on HEAD, so a failed push
+      can be retried with the same command). `.github/workflows/release.yml` runs `mise run
+      package` on a `v*`
       tag and attaches the assets via `gh release create` (SwiftPM cache in a release-scoped key
       that warm-starts from the CI dependency cache).
 - [x] Cut the first release — tag `v0.1.0`, universal binaries published to the GitHub release.
