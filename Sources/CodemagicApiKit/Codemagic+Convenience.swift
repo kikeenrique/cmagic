@@ -14,7 +14,8 @@ public extension Codemagic {
         try await underlying.getApps().ok.body.json.applications
     }
 
-    /// List builds for an application (newest first; first page only — see `nextPageUrl`).
+    /// First page of builds for an application (newest first, 30 max).
+    /// For more than one page use `builds(appId:branch:limit:maxPages:)`.
     func builds(appId: String) async throws -> [Build] {
         try await underlying.listBuilds(.init(query: .init(appId: appId))).ok.body.json.builds
     }

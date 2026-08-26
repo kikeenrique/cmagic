@@ -43,6 +43,56 @@ import Testing
     }
 
     @Test(.replay(stubs: [
+        .get("https://api.codemagic.io/builds?appId=demo", 200, jsonHeaders, {
+            """
+            { "builds": [
+              { "_id": "p1a", "status": "finished", "branch": "main" },
+              { "_id": "p1b", "status": "finished", "branch": "dev" }
+            ], "nextPageUrl": "/builds?appId=demo&skip=30" }
+            """
+        }),
+        .get("https://api.codemagic.io/builds?appId=demo&skip=30", 200, jsonHeaders, {
+            """
+            { "builds": [ { "_id": "p2a", "status": "failed", "branch": "main" } ], "nextPageUrl": null }
+            """
+        })
+    ]))
+    func walksPagesUntilTheLimitIsFilled() async throws {
+        let cmagic = client()
+        let all = try await cmagic.builds(appId: "demo", limit: 10)
+        #expect(all.builds.map(\._id) == ["p1a", "p1b", "p2a"])
+        #expect(all.nextOffset == nil)                       // reached the end of the history
+
+        let onMain = try await cmagic.builds(appId: "demo", branch: "main", limit: 10)
+        #expect(onMain.builds.map(\._id) == ["p1a", "p2a"])  // branch filter is client-side
+
+        let firstOnly = try await cmagic.builds(appId: "demo", limit: 1)
+        #expect(firstOnly.builds.map(\._id) == ["p1a"])
+        #expect(firstOnly.nextOffset == 1)                   // resumes right after the build shown
+    }
+
+    @Test(.replay(stubs: [
+        .get("https://api.codemagic.io/builds?appId=demo&skip=60", 200, jsonHeaders, {
+            """
+            { "builds": [
+              { "_id": "p3a", "status": "finished", "branch": "main" },
+              { "_id": "p3b", "status": "failed", "branch": "main" }
+            ], "nextPageUrl": "/builds?appId=demo&skip=90" }
+            """
+        })
+    ]))
+    func offsetIsSentAsTheApiSkipParameter() async throws {
+        let window = try await client().builds(appId: "demo", limit: 2, offset: 60)
+        #expect(window.builds.map(\._id) == ["p3a", "p3b"])
+        #expect(window.nextOffset == 62)                     // 60 skipped + the 2 returned
+    }
+
+    @Test func readsTheOffsetOutOfANextPageCursor() {
+        #expect(Codemagic.offset(inCursor: "/builds?appId=demo&skip=30") == 30)
+        #expect(Codemagic.offset(inCursor: "/builds?appId=demo") == nil)
+    }
+
+    @Test(.replay(stubs: [
         .get("https://api.codemagic.io/builds/b1", 200, jsonHeaders, {
             """
             { "build": { "_id": "b1", "status": "finished", "branch": "main", "artefacts": [ { "name": "TestResults.xcresult.zip", "url": "https://api.codemagic.io/artifacts/a/b/TestResults.xcresult.zip", "path": "a/b/TestResults.xcresult.zip", "size": 1024 } ] } }

@@ -58,6 +58,7 @@ The token is read from the config file (see [Authentication](#authentication)).
 ```bash
 cmagic apps                                   # list apps: <id>  <name>
 cmagic builds --app <id> --limit 10           # recent builds (add --branch <b> to filter)
+cmagic builds --app <id> --next-page 60 --limit 20  # builds 61-80 (the API's own skip)
 cmagic build show <buildId>                    # one build's detail + artefacts
 cmagic build show <buildId> --steps            # + each step's status and duration
 cmagic build logs <buildId> [--step N] [--raw]  # step logs (plain text; --raw keeps colour markup)
@@ -79,8 +80,29 @@ cmagic caches delete --app <id> [--cache-id <id>]
 `--json` for machine-readable output (pipe into `jq`). Run any command with `--help` for options.
 
 ```bash
-cmagic builds --app <id> --json | jq '.[] | select(.status=="failed")._id'
+cmagic builds --app <id> --json | jq '.builds[] | select(.status=="failed")._id'
 ```
+
+### Paging builds
+
+`GET /builds` serves 30 builds per call — there is no page-size parameter — and its `nextPageUrl`
+cursor is a `skip=<n>` offset. `cmagic builds` follows that cursor as needed to satisfy `--limit`,
+and `--next-page <n>` starts the listing `n` builds in, sent as the API's own `skip`. When builds are
+left over, the offset that resumes right after the last row shown is printed as a `next-page:` line
+(`nextPage` under `--json`, `null` at the end of the history), so chained calls neither skip nor
+repeat a build:
+
+```bash
+cmagic builds --app <id> --limit 25              # … then: next-page: 25
+cmagic builds --app <id> --next-page 25 --limit 25
+cmagic builds --app <id> --limit 0 --json        # no cap: the whole history
+```
+
+`--max-pages` (default 20) caps how many 30-build pages a single call may fetch — it only bites with
+`--branch`, which is filtered client-side since the API filters by app only. Note that paging is
+positional rather than anchored to a build: a build started between two calls shifts the history
+down, so a resumed listing can repeat one. The API offers no stable cursor, so de-duplicate by
+`_id` if that matters.
 
 ## Approach
 
@@ -100,6 +122,7 @@ Sources/
     openapi-generator-config.yaml
     Codemagic.swift              # client wrapper (base URL + auth middleware)
     Codemagic+Convenience.swift  # model-returning API: apps/builds/caches/cancel/start/…
+    BuildPaging.swift            # cursor paging over GET /builds (nextPageUrl)
     AuthMiddleware.swift         # injects x-auth-token
     Configuration.swift          # CmagicConfig — loads token from the config file
     ArtefactDownloader.swift     # URLSession download of build.artefacts[].url
@@ -110,7 +133,7 @@ Sources/
     ArtifactsCommand.swift       # artifacts pull/public-url + unzip
     CachesCommand.swift          # caches list/delete
     OutputOptions.swift          # shared --json flag + emitter
-Tests/CodemagicApiKitTests/      # 23 offline tests (config, decoding, auth, Replay stubs)
+Tests/CodemagicApiKitTests/      # 26 offline tests (config, decoding, auth, Replay stubs)
 Scripts/
   GenerateOpenAPIV1.swift        # scrapes the v1 HTML docs → OpenAPI, merging a hand-authored patch
 documentation/

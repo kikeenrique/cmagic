@@ -46,32 +46,65 @@ struct Apps: AsyncParsableCommand {
 // MARK: - builds
 
 struct Builds: AsyncParsableCommand {
-    static let configuration = CommandConfiguration(commandName: "builds", abstract: "List recent builds for an app.")
+    static let configuration = CommandConfiguration(
+        commandName: "builds",
+        abstract: "List builds for an app, newest first.",
+        discussion: """
+            The API serves 30 builds per call and says where the next page starts, so a bigger \
+            --limit walks those pages. --next-page starts the listing that many builds in (the \
+            API's own `skip`); when builds are left over, the offset to resume from is printed \
+            as a `next-page:` line.
+
+            Paging is positional rather than anchored to a build, so a build started between \
+            two calls shifts the history down and a resumed listing can repeat one. The API \
+            offers no stable cursor, so de-duplicate by id if that matters.
+            """
+    )
 
     @Option(name: [.short, .long], help: "Application id (defaults to `app` in config).")
     var app: String?
 
-    @Option(name: [.short, .long], help: "Filter to this branch.")
+    @Option(name: [.short, .long], help: "Filter to this branch (client-side; the API filters by app only).")
     var branch: String?
 
-    @Option(name: [.short, .long], help: "Max builds to show.")
+    @Option(name: [.short, .long], help: "Max builds to show (0 = no cap, to the end of the history).")
     var limit: Int = 20
+
+    @Option(name: .long, help: "Start this many builds into the history (the API's own `skip`).")
+    var nextPage: Int = 0
+
+    @Option(name: .long, help: "Cap on how many 30-build pages one call may request (bites with --branch).")
+    var maxPages: Int = 20
 
     @OptionGroup var out: OutputOptions
 
-    func run() async throws {
-        let (config, cm) = try Session.loadConfigAndClient()
-        let appId = try Session.resolveAppId(app, config: config)
-        var builds = try await cm.builds(appId: appId)
-        let branchFilter = branch ?? config.branch
-        if let branchFilter { builds = builds.filter { $0.branch == branchFilter } }
-        builds = Array(builds.prefix(max(0, limit)))
+    /// `--json` shape: the builds plus the offset to resume from (null at the end of the history).
+    struct ListOutput: Encodable {
+        let builds: [Codemagic.Build]
+        let nextPage: Int?
+    }
 
-        if out.json { try out.emit(builds); return }
+    func run() async throws {
+        let (config, cmagic) = try Session.loadConfigAndClient()
+        let result = try await cmagic.builds(
+            appId: try Session.resolveAppId(app, config: config),
+            branch: branch ?? config.branch,
+            limit: limit > 0 ? limit : nil,      // --limit 0 = no cap
+            offset: max(0, nextPage),
+            maxPages: max(1, maxPages)
+        )
+
+        if out.json {
+            try out.emit(ListOutput(builds: result.builds, nextPage: result.nextOffset))
+            return
+        }
         print("STATUS\tBRANCH\tARTEFACTS\tID")
-        for b in builds {
-            let count = b.artefacts?.count ?? 0
-            print("\(b.status ?? "?")\t\(b.branch ?? b.tag ?? "-")\t\(count)\t\(b._id)")
+        for build in result.builds {
+            let count = build.artefacts?.count ?? 0
+            print("\(build.status ?? "?")\t\(build.branch ?? build.tag ?? "-")\t\(count)\t\(build._id)")
+        }
+        if let next = result.nextOffset {
+            print("next-page: \(next)")
         }
     }
 }

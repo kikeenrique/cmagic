@@ -16,7 +16,7 @@ no real build minutes). Both `artifacts` subcommands accept an optional `--build
 specific build (instead of the latest build on a branch), fetched via the already-tested
 `Codemagic.build(id:)`. The `CodemagicApiKit` library wraps a
 swift-openapi-generator client (auth middleware + config-file token + artefact downloader). GitHub
-Actions CI runs build + test. 23 offline tests, ~83% library line coverage (networked paths stubbed
+Actions CI runs build + test. 26 offline tests, ~83% library line coverage (networked paths stubbed
 with Replay). Released as `0.1.0` (tag `v0.1.0`) with prebuilt universal binaries; consumed by
 `mise` and a separately-maintained Homebrew tap.
 
@@ -63,7 +63,10 @@ Verified live against a real token (July 2026, read endpoints only). See PROCESS
 
 - [x] `cmagic apps` — list apps → `_id`
 - [x] `cmagic builds --app <id> [--branch <b>] [--limit N]` (branch/limit are client-side — the v1
-      API only filters by `appId`; first page only for now)
+      API only filters by `appId`). Paging is the API's own: 30 builds per call, `--next-page <n>`
+      sends its `skip` offset, and the resume offset comes back as a `next-page:` line
+      (`--limit 0` walks to the end of the history; positional paging can repeat a build if one
+      starts mid-walk — no stable cursor exists)
 - [x] `cmagic build show <buildId>` — one build's detail (incl. artefacts + human sizes); `--steps`
       renders each build step's status + duration (v1 `buildActions`, verified live, 16 steps)
 - [x] `cmagic artifacts pull [--app <id>] [--branch <b>] --name <substr> [-o <dir>]` — the core
