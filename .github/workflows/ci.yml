@@ -35,3 +35,30 @@ jobs:
 
       - name: Test
         run: swift test
+
+  build-test-linux:
+    name: Build & Test (Linux)
+    runs-on: ubuntu-latest
+    # The swift.org image already carries the toolchain; its version is kept in
+    # step with the static SDK pinned in release.yml so both build the same Swift.
+    container: swift:6.4-noble
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Swift version
+        run: swift --version
+
+      - name: Cache SwiftPM
+        uses: actions/cache@v6
+        with:
+          # Keyed separately from the macOS job: same Package.resolved, different
+          # target objects, and a shared key would thrash both caches.
+          path: .build
+          key: linux-spm-${{ hashFiles('Package.resolved') }}
+          restore-keys: linux-spm-
+
+      - name: Build
+        run: swift build
+
+      - name: Test
+        run: swift test
