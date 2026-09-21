@@ -3,6 +3,11 @@ name: Release
 on:
   push:
     tags: ["v[0-9]*"]
+  # Dry run: builds and smoke-tests every artefact without publishing anything, so
+  # the pipeline can be proved without spending a tag. A tag is close to
+  # irreversible — it publishes a release installers can resolve — while this costs
+  # nothing and can be re-run until it is green.
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -159,10 +164,31 @@ jobs:
           rm dist/SHA256SUMS.*
           cat dist/SHA256SUMS
 
+      - name: Publish dry-run artefacts
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          # Everything a real release would carry, downloadable for inspection —
+          # the point of a dry run is to hold the binaries without publishing them.
+          name: dry-run-dist
+          path: dist/
+          if-no-files-found: error
+
       - name: Create GitHub release
+        # Only a tag publishes. A dispatch has no tag, so GITHUB_REF_NAME would be
+        # the branch and `gh release` would create nonsense.
+        if: github.event_name == 'push'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # A tag carrying a suffix (v1.2.3-rc1) is a prerelease: without this it
+          # would publish as "Latest" and installers resolving the newest release
+          # would hand users a release candidate.
+          prerelease=""
+          case "$GITHUB_REF_NAME" in
+            *-*) prerelease="--prerelease" ;;
+          esac
+
           # Re-pushing a tag re-runs this workflow, and `create` then dies on
           # "a release with the same tag name already exists". Upload into the
           # existing release instead, so a re-run refreshes assets rather than failing.
@@ -182,5 +208,6 @@ jobs:
             gh release create "$GITHUB_REF_NAME" "${assets[@]}" \
               --repo "$GITHUB_REPOSITORY" \
               --title "$GITHUB_REF_NAME" \
-              --generate-notes
+              --generate-notes \
+              $prerelease
           fi
