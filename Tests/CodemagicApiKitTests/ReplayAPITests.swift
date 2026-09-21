@@ -3,6 +3,15 @@ import Replay
 import Testing
 @testable import CodemagicApiKit
 
+// Linux and the other corelibs-Foundation platforms take `URLSession` from
+// FoundationNetworking, whose `download(for:)` is the one `downloadsArtefactToFile`
+// trips over below.
+#if canImport(FoundationNetworking)
+private let runsOnCorelibsFoundation = true
+#else
+private let runsOnCorelibsFoundation = false
+#endif
+
 /// Exercises the networked layer (generated client wrappers, downloader, public-url)
 /// against synthetic Replay stubs — no live network, no recorded private data.
 @Suite struct ReplayAPITests {
@@ -175,9 +184,39 @@ import Testing
         #expect(body.contains("<span"))   // markup preserved by the fetch; the CLI strips it
     }
 
-    @Test(.replay(stubs: [
-        .get("https://api.codemagic.io/artifacts/a/b/app.zip", 200, ["Content-Type": "application/octet-stream"], { "PK-fake-bytes" })
-    ]))
+    // Skipped on Linux rather than marked as a known issue: `withKnownIssue` records
+    // and tolerates *issues*, but this failure is a process-level crash (SIGSEGV on a
+    // DispatchWorker thread) that kills the test runner outright. There is nothing
+    // left for an expectation to catch, so no expected-failure trait can express it.
+    //
+    // corelibs Foundation's `URLSession.download(for:)` assumes the response was
+    // written to a file. Replay's PlaybackURLProtocol delivers bytes through
+    // `urlProtocol(_:didLoad:)` instead, so `_ProtocolClient.completeTask` reaches the
+    // download completion closure with no temp file and crashes:
+    //
+    //   0 closure #1 in …URLSession.download(for:delegate:)  libFoundationNetworking.so
+    //   4 _ProtocolClient.urlProtocolDidFinishLoading(_:)     libFoundationNetworking.so
+    //   5 closure #1 in PlaybackURLProtocol.startLoading()    Replay
+    //
+    // Apple's URLSession buffers that itself, which is why macOS is unaffected. Only
+    // the *stubbed* path is known to be broken; a real download writes a real temp
+    // file and may well be fine, so this skip is not evidence that the CLI cannot
+    // download artefacts on Linux.
+    //
+    // WHY THIS NEEDS REVIEW IF IT EVER STOPS CRASHING: the skip is hiding coverage of
+    // the downloader on Linux. If a Foundation or Replay bump makes the stubbed path
+    // work, drop the `.disabled` and let it run on both platforms. Because the failure
+    // is a crash and not a recorded issue, nothing reports that automatically — a
+    // toolchain or Replay upgrade is the cue to re-check by hand.
+    @Test(
+        .replay(stubs: [
+            .get("https://api.codemagic.io/artifacts/a/b/app.zip", 200, ["Content-Type": "application/octet-stream"], { "PK-fake-bytes" })
+        ]),
+        .disabled(
+            if: runsOnCorelibsFoundation,
+            "corelibs Foundation's download(for:) crashes under Replay's stubbed URLProtocol — see the comment above before re-enabling"
+        )
+    )
     func downloadsArtefactToFile() async throws {
         let dir = URL(fileURLWithPath: NSTemporaryDirectory())
             .appendingPathComponent("cmagic-dl-\(UUID().uuidString)", isDirectory: true)
