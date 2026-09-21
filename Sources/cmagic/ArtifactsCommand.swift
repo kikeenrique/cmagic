@@ -134,7 +134,7 @@ struct Artifacts: AsyncParsableCommand {
     }
 }
 
-/// Tiny zip helper backed by `/usr/bin/unzip`.
+/// Tiny zip helper backed by the system `unzip`.
 enum Archive {
     static func isZip(_ file: URL) -> Bool {
         guard let handle = try? FileHandle(forReadingFrom: file) else { return false }
@@ -143,9 +143,24 @@ enum Archive {
         return magic == Data([0x50, 0x4B, 0x03, 0x04]) // "PK\x03\x04"
     }
 
+    /// Resolved off `PATH` rather than hardcoded: macOS ships `/usr/bin/unzip`, but
+    /// Linux distributions place it differently and minimal images often omit it.
+    static func unzipTool() -> URL? {
+        let path = ProcessInfo.processInfo.environment["PATH"] ?? "/usr/bin:/bin"
+        for directory in path.split(separator: ":") where !directory.isEmpty {
+            let candidate = URL(fileURLWithPath: String(directory)).appendingPathComponent("unzip")
+            if FileManager.default.isExecutableFile(atPath: candidate.path) { return candidate }
+        }
+        return nil
+    }
+
     static func unzip(_ file: URL, into directory: URL) throws {
+        guard let tool = unzipTool() else {
+            // The archive is only deleted after a successful unzip, so it is still on disk.
+            throw CleanExit.message("`unzip` not found on PATH — install it (e.g. `apt-get install unzip`); the archive is kept at \(file.path)")
+        }
         let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/unzip")
+        process.executableURL = tool
         process.arguments = ["-q", "-o", file.path, "-d", directory.path]
         try process.run()
         process.waitUntilExit()
