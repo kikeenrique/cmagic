@@ -38,7 +38,7 @@ jobs:
 
   build-test-linux:
     name: Build & Test (Linux)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     # The swift.org image already carries the toolchain; its version is kept in
     # step with the static SDK pinned in release.yml so both build the same Swift.
     container: swift:6.4-noble

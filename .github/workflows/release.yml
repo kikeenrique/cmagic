@@ -46,7 +46,7 @@ jobs:
         run: mise run package
 
       - name: Upload to workflow
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dist-macos
           path: |
@@ -61,10 +61,10 @@ jobs:
       matrix:
         include:
           - arch: x86_64
-            runner: ubuntu-latest
+            runner: ubuntu-26.04
           # glibc builds cannot cross-compile, so aarch64 needs a native runner.
           - arch: aarch64
-            runner: ubuntu-24.04-arm
+            runner: ubuntu-26.04-arm
     runs-on: ${{ matrix.runner }}
     # Jammy rather than the CI job's noble: glibc symbol versioning means the
     # binary will not start on anything older than its build glibc, so the
@@ -96,7 +96,7 @@ jobs:
         run: mise run smoke-test "dist/cmagic-${{ matrix.arch }}-unknown-linux-gnu.tar.gz"
 
       - name: Upload to workflow
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dist-linux-gnu-${{ matrix.arch }}
           path: |
@@ -106,7 +106,7 @@ jobs:
 
   linux-musl:
     name: Build Linux musl (x86_64 + aarch64)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     # Literal rather than the env above: the `env` context is not available to
     # job-level `container`. Keep this in step with STATIC_SDK_URL.
     container: swift:6.4-noble
@@ -142,7 +142,7 @@ jobs:
         run: mise run smoke-test dist/cmagic-x86_64-unknown-linux-musl.tar.gz
 
       - name: Upload to workflow
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dist-linux-musl
           path: |
@@ -153,10 +153,10 @@ jobs:
   publish:
     name: Publish release
     needs: [macos, linux-gnu, linux-musl]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - name: Collect platform artefacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: dist
           pattern: dist-*
@@ -176,7 +176,7 @@ jobs:
 
       - name: Publish dry-run artefacts
         if: github.event_name == 'workflow_dispatch'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           # Everything a real release would carry, downloadable for inspection —
           # the point of a dry run is to hold the binaries without publishing them.
