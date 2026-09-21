@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+#MISE description="Build fully static (musl) Linux release binaries for x86_64 + aarch64 into dist/"
+#
+# The secondary Linux artefact, for hosts the glibc build cannot serve: Alpine and
+# other musl distributions, and distroless images. Built against the Swift Static
+# Linux SDK, so both slices are fully static with no libc dependency at all — which
+# is also what lets one x86_64 runner produce the aarch64 artefact.
+#
+# `package-linux-gnu` builds the conventional primary artefact.
+#
+# Requires a swift.org toolchain with a *matching* version of the static SDK
+# installed. Xcode's toolchain cannot consume the swift.org SDK ("compiled module
+# was created by a different version of the compiler"), so this task does not run
+# on a stock macOS install — it is a Linux-CI task. See .github/workflows/release.yml.
+set -euo pipefail
+
+# Only this variant's slice of dist/ is cleared; see the note in `package`.
+rm -f dist/SHA256SUMS.linux-musl dist/cmagic-*-unknown-linux-musl.tar.gz
+mkdir -p dist
+
+# Left-hand side is the SDK name, right-hand side the asset name. Assets are named
+# with the full target triple, libc included, which is the prevailing convention for
+# Linux release assets and what installers parse. `ubi` only filters on libc when the
+# *host* is musl (glibc hosts accept any asset), and `mise` scores rather than
+# filters, so the honest `-musl` name costs nothing on glibc hosts.
+build() {
+  sdk="$1"
+  triple="$2"
+  swift build -c release --disable-sandbox --product cmagic --swift-sdk "$sdk"
+  bin="$(swift build -c release --disable-sandbox --product cmagic --swift-sdk "$sdk" --show-bin-path)"
+  file "$bin/cmagic"
+  # gzip -n omits the timestamp/name so repeated packaging of the same binary is
+  # byte-identical, matching how `package` builds its darwin archives.
+  tar -cf - -C "$bin" cmagic | gzip -n > "dist/cmagic-$triple.tar.gz"
+  sha256sum "dist/cmagic-$triple.tar.gz" | tee -a dist/SHA256SUMS.linux-musl
+}
+
+build x86_64-swift-linux-musl x86_64-unknown-linux-musl
+build aarch64-swift-linux-musl aarch64-unknown-linux-musl
+
+ls -l dist

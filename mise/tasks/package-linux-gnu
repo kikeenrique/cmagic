@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+#MISE description="Build the glibc Linux release binary for the host architecture into dist/"
+#
+# The conventional primary Linux artefact, and the one most installers expect:
+# linked against glibc, with the Swift runtime bundled by --static-swift-stdlib so
+# users need no toolchain installed.
+#
+# glibc's symbol versioning sets a floor — the binary will not start on a system
+# whose glibc is older than the one it was built against — so this runs in an
+# older distribution's container than the CI job uses. See release.yml.
+#
+# Unlike the musl SDK, this cannot cross-compile: `--static-swift-stdlib` links
+# against the host's glibc, so each architecture is built on a native runner.
+# `package-linux-musl` covers hosts this artefact cannot serve.
+set -euo pipefail
+
+case "$(uname -m)" in
+  x86_64) arch="x86_64" ;;
+  aarch64 | arm64) arch="aarch64" ;;
+  *)
+    echo "unsupported architecture: $(uname -m)" >&2
+    exit 1
+    ;;
+esac
+triple="$arch-unknown-linux-gnu"
+
+# Only this variant's slice of dist/ is cleared; see the note in `package`. The
+# fragment is per-arch because the two slices are built on separate runners and
+# their outputs are merged only at publish time.
+rm -f "dist/SHA256SUMS.linux-gnu-$arch" "dist/cmagic-$triple.tar.gz"
+mkdir -p dist
+
+flags=(-c release --disable-sandbox --product cmagic --static-swift-stdlib)
+swift build "${flags[@]}"
+bin="$(swift build "${flags[@]}" --show-bin-path)"
+file "$bin/cmagic"
+
+# gzip -n omits the timestamp/name so repeated packaging of the same binary is
+# byte-identical, matching how `package` builds its darwin archives.
+tar -cf - -C "$bin" cmagic | gzip -n > "dist/cmagic-$triple.tar.gz"
+sha256sum "dist/cmagic-$triple.tar.gz" | tee -a "dist/SHA256SUMS.linux-gnu-$arch"
+
+ls -l dist

@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+#MISE description="Unpack a release tarball and check the binary runs and can complete a TLS request. Usage: mise run smoke-test dist/cmagic-<triple>.tar.gz"
+#USAGE arg "<tarball>" help="Release tarball to test; must match the host architecture and libc"
+#
+# This CLI does nothing but call an HTTPS API, so a binary that starts but cannot
+# complete a TLS handshake is broken in the only way that matters — and that has
+# been a real failure mode for Swift's static builds, not a theoretical one
+# (swift-corelibs-foundation#5157: a missing curlver.h include left
+# CFURLSessionInfoCAINFO resolving to CURLINFO_NONE, so certificate verification
+# could never find a trust store). The release refuses to publish without this.
+set -euo pipefail
+
+tarball="$usage_tarball"
+[ -f "$tarball" ] || { echo "no such tarball: $tarball" >&2; exit 1; }
+
+workdir="$(mktemp -d)"
+trap 'rm -rf "$workdir"' EXIT
+tar -xzf "$tarball" -C "$workdir"
+
+echo "== $tarball: does it run?"
+"$workdir/cmagic" --version
+
+echo "== $tarball: can it complete TLS?"
+# A deliberately invalid token: reaching the server for an auth failure proves the
+# handshake and certificate validation completed. A missing or unusable trust store
+# fails earlier and surfaces as a certificate error instead, which is what we catch.
+mkdir -p "$workdir/config/cmagic"
+printf 'token = "smoke-test-invalid-token"\n' > "$workdir/config/cmagic/config.toml"
+chmod 600 "$workdir/config/cmagic/config.toml"
+
+set +e
+output=$(XDG_CONFIG_HOME="$workdir/config" "$workdir/cmagic" apps 2>&1)
+set -e
+echo "$output"
+
+if printf '%s' "$output" | grep -qiE 'certificate|SSL|TLS handshake|CA cert'; then
+  echo "FAIL: $tarball cannot complete TLS" >&2
+  exit 1
+fi
+
+echo "OK: reached the server (an auth failure here is the expected result)"
