@@ -7,9 +7,15 @@ on:
 permissions:
   contents: write
 
+env:
+  # Pinned together: the Static Linux SDK can only be consumed by the toolchain
+  # version that produced it, so the container tag and the SDK URL move as a pair.
+  STATIC_SDK_URL: https://download.swift.org/swift-6.4.0-release/static-sdk/swift-6.4.0-RELEASE/swift-6.4.0-RELEASE_static-linux-0.1.0.artifactbundle.tar.gz
+  STATIC_SDK_CHECKSUM: 47d2fd89eebfdf9eb4d536b6710414297f755c17926cdebc4742c08982b40a9e
+
 jobs:
-  release:
-    name: Build & publish
+  macos:
+    name: Build macOS
     runs-on: macos-26
     steps:
       - uses: actions/checkout@v7
@@ -23,16 +29,135 @@ jobs:
       - name: Cache SwiftPM
         uses: actions/cache@v6
         with:
-          path: .build
           # Release-scoped key (its .build holds release + per-arch products the
           # debug CI cache lacks); restore-keys warm-start from CI's dependency cache.
           key: ${{ runner.os }}-spm-release-${{ hashFiles('Package.resolved') }}
+          path: .build
           restore-keys: |
             ${{ runner.os }}-spm-release-
             ${{ runner.os }}-spm-
 
-      - name: Package release binary
+      - name: Package release binaries
         run: mise run package
+
+      - name: Upload to workflow
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-macos
+          path: |
+            dist/cmagic-*-apple-darwin.tar.gz
+            dist/SHA256SUMS.darwin
+          if-no-files-found: error
+
+  linux-gnu:
+    name: Build Linux glibc (${{ matrix.arch }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            runner: ubuntu-latest
+          # glibc builds cannot cross-compile, so aarch64 needs a native runner.
+          - arch: aarch64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    # Jammy rather than the CI job's noble: glibc symbol versioning means the
+    # binary will not start on anything older than its build glibc, so the
+    # release is built on the oldest distribution the toolchain still supports.
+    container: swift:6.4-jammy
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install mise
+        uses: jdx/mise-action@v4
+
+      - name: Cache SwiftPM
+        uses: actions/cache@v6
+        with:
+          key: linux-gnu-${{ matrix.arch }}-spm-release-${{ hashFiles('Package.resolved') }}
+          path: .build
+          restore-keys: linux-gnu-${{ matrix.arch }}-spm-release-
+
+      - name: Package release binary
+        run: mise run package-linux-gnu
+
+      - name: Smoke-test
+        # Native to this runner, so both architectures get exercised.
+        run: mise run smoke-test "dist/cmagic-${{ matrix.arch }}-unknown-linux-gnu.tar.gz"
+
+      - name: Upload to workflow
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-linux-gnu-${{ matrix.arch }}
+          path: |
+            dist/cmagic-${{ matrix.arch }}-unknown-linux-gnu.tar.gz
+            dist/SHA256SUMS.linux-gnu-${{ matrix.arch }}
+          if-no-files-found: error
+
+  linux-musl:
+    name: Build Linux musl (x86_64 + aarch64)
+    runs-on: ubuntu-latest
+    # Literal rather than the env above: the `env` context is not available to
+    # job-level `container`. Keep this in step with STATIC_SDK_URL.
+    container: swift:6.4-noble
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install mise
+        uses: jdx/mise-action@v4
+
+      - name: Install Static Linux SDK
+        # Both the x86_64 and aarch64 musl SDKs ship in this one bundle, which is
+        # why a single x86_64 runner can emit both slices.
+        run: swift sdk install "$STATIC_SDK_URL" --checksum "$STATIC_SDK_CHECKSUM"
+
+      - name: Cache SwiftPM
+        uses: actions/cache@v6
+        with:
+          key: linux-musl-spm-release-${{ hashFiles('Package.resolved') }}
+          path: .build
+          restore-keys: linux-musl-spm-release-
+
+      - name: Package release binaries
+        run: mise run package-linux-musl
+
+      - name: Smoke-test
+        # Only the x86_64 slice can execute here; aarch64 ships unexercised, short
+        # of qemu. The glibc job covers aarch64 natively.
+        run: mise run smoke-test dist/cmagic-x86_64-unknown-linux-musl.tar.gz
+
+      - name: Upload to workflow
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-linux-musl
+          path: |
+            dist/cmagic-*-unknown-linux-musl.tar.gz
+            dist/SHA256SUMS.linux-musl
+          if-no-files-found: error
+
+  publish:
+    name: Publish release
+    needs: [macos, linux-gnu, linux-musl]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Collect platform artefacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          pattern: dist-*
+          merge-multiple: true
+
+      - name: Merge checksums
+        # Each build job writes only its own fragment, since they run on separate
+        # runners and cannot append to a shared file. One SHA256SUMS is what the
+        # Homebrew formula and manual verification expect, so join them here — by
+        # glob, so adding a build job needs no change to this step.
+        run: |
+          # Written without a dot suffix so the fragment glob below cannot match
+          # the merged file it just produced.
+          cat dist/SHA256SUMS.* | sort -k2 > dist/SHA256SUMS
+          rm dist/SHA256SUMS.*
+          cat dist/SHA256SUMS
 
       - name: Create GitHub release
         env:
@@ -44,13 +169,18 @@ jobs:
           assets=(
             dist/cmagic-aarch64-apple-darwin.tar.gz
             dist/cmagic-x86_64-apple-darwin.tar.gz
+            dist/cmagic-aarch64-unknown-linux-gnu.tar.gz
+            dist/cmagic-x86_64-unknown-linux-gnu.tar.gz
+            dist/cmagic-aarch64-unknown-linux-musl.tar.gz
+            dist/cmagic-x86_64-unknown-linux-musl.tar.gz
             dist/SHA256SUMS
           )
-          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+          if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             echo "release $GITHUB_REF_NAME exists — refreshing its assets"
-            gh release upload "$GITHUB_REF_NAME" "${assets[@]}" --clobber
+            gh release upload "$GITHUB_REF_NAME" "${assets[@]}" --repo "$GITHUB_REPOSITORY" --clobber
           else
             gh release create "$GITHUB_REF_NAME" "${assets[@]}" \
+              --repo "$GITHUB_REPOSITORY" \
               --title "$GITHUB_REF_NAME" \
               --generate-notes
           fi
