@@ -213,8 +213,9 @@ swift Scripts/GenerateOpenAPIV1.swift
 Task-level progress (achieved + pending) is tracked in
 [`roadmap/ROADMAP.md`](./roadmap/ROADMAP.md). The spec is validated against live responses and the
 swift-openapi-generator client (plus the `URLSession`-direct download / public-url / step-log
-helpers) ships the full command surface, distributed as tagged universal binaries with GitHub
-Actions running build + test. Every endpoint the CLI uses is now live-confirmed, `instanceType`
+helpers) ships the full command surface, distributed as tagged universal macOS binaries plus
+glibc and musl Linux binaries (x86_64 + aarch64 each), with GitHub Actions running build + test
+on both platforms and smoke-testing every Linux artefact it can execute before publishing. Every endpoint the CLI uses is now live-confirmed, `instanceType`
 included, so no spec question is outstanding. What remains is release work and two judgement calls
 — whether to generate a second client for v3's read models, and how far to trust the "preview"
 build APIs — both tracked in the roadmap.

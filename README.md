@@ -12,7 +12,7 @@
 
 [![Release](https://img.shields.io/github/v/release/kikeenrique/cmagic?sort=semver)](https://github.com/kikeenrique/cmagic/releases)
 [![CI](https://img.shields.io/github/actions/workflow/status/kikeenrique/cmagic/ci.yml?branch=main&label=CI)](https://github.com/kikeenrique/cmagic/actions/workflows/ci.yml)
-![Platform](https://img.shields.io/badge/platform-macOS%2013%2B-lightgrey)
+![Platform](https://img.shields.io/badge/platform-macOS%2013%2B%20%7C%20Linux-lightgrey)
 ![Swift](https://img.shields.io/badge/swift-6.0-orange)
 
 **cmagic** is a command-line tool for [Codemagic](https://codemagic.io), the CI/CD service for
@@ -31,8 +31,14 @@ package replaces that with a typed Swift client.
 
 ## Install
 
-Prebuilt universal (arm64 + x86_64) macOS binaries are attached to each
-[GitHub release](https://github.com/kikeenrique/cmagic/releases).
+Prebuilt binaries are attached to each
+[GitHub release](https://github.com/kikeenrique/cmagic/releases): a universal
+(arm64 + x86_64) macOS binary, and Linux binaries for x86_64 and aarch64 in two
+variants — `-gnu` for glibc distributions (Debian, Ubuntu, Fedora, RHEL and the
+rest), and `-musl` for Alpine, other musl distributions, and distroless images.
+Both bundle the Swift runtime, so no toolchain is needed. Installers pick the
+right one automatically; downloading by hand, take `-gnu` unless you know you
+are on musl.
 
 ```bash
 # Homebrew
@@ -43,6 +49,22 @@ mise use -g github:kikeenrique/cmagic        # latest, or pin @v0.3.0
 ```
 
 Or build from source (see below) and copy `.build/release/cmagic` onto your `PATH`.
+
+### Linux notes
+
+- **Which variant.** The `-gnu` build is linked against glibc and will not start
+  on a system whose glibc is older than the one it was built against; it is built
+  on Ubuntu 22.04 to keep that floor low. The `-musl` build is fully static with
+  no libc dependency, so it runs anywhere — including images the `-gnu` build
+  cannot serve.
+- **TLS trust store.** Neither variant ships a CA bundle; both read the host's.
+  Distributions install one with the `ca-certificates` package, but minimal and
+  distroless images often do not, and every request then fails with a certificate
+  error. Install `ca-certificates`, or point the binary at a bundle with
+  `SSL_CERT_FILE=/path/to/ca-bundle.crt`.
+- **`unzip`.** `cmagic artifacts pull` shells out to `unzip` to expand `.zip` and
+  `.xcresult` artefacts. It is preinstalled on macOS but not on every Linux image;
+  `cmagic` reports it clearly and keeps the archive when it is missing.
 
 ## Build, test, run
 
