@@ -73,6 +73,11 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - name: Install curl
+        # The swift.org images ship neither curl nor wget, and jdx/mise-action needs
+        # one to download mise. The container runs as root, so no sudo.
+        run: apt-get update && apt-get install -y --no-install-recommends curl
+
       - name: Install mise
         uses: jdx/mise-action@v4
 
@@ -107,6 +112,11 @@ jobs:
     container: swift:6.4-noble
     steps:
       - uses: actions/checkout@v7
+
+      - name: Install curl
+        # The swift.org images ship neither curl nor wget, and jdx/mise-action needs
+        # one to download mise. The container runs as root, so no sudo.
+        run: apt-get update && apt-get install -y --no-install-recommends curl
 
       - name: Install mise
         uses: jdx/mise-action@v4
