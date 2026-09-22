@@ -52,11 +52,13 @@ Or build from source (see below) and copy `.build/release/cmagic` onto your `PAT
 
 ### Linux notes
 
-- **Which variant.** The `-gnu` build is linked against glibc and will not start
-  on a system whose glibc is older than the one it was built against; it is built
-  on Ubuntu 22.04 to keep that floor low. The `-musl` build is fully static with
-  no libc dependency, so it runs anywhere — including images the `-gnu` build
-  cannot serve.
+- **Which variant.** The `-gnu` build needs **glibc 2.34 or newer** — RHEL 9,
+  Debian 12, Ubuntu 22.04 and anything later — and loads `libcurl`, `libstdc++`
+  and `libgcc_s` from the system. Almost every distribution has those installed;
+  if yours doesn't, it fails at startup with `libcurl.so.4: cannot open shared
+  object file`, and the fix is to install `libcurl` (`libcurl4` on Debian and
+  Ubuntu). The `-musl` build is fully static with no dependencies at all, so it
+  runs anywhere, including minimal and distroless images the `-gnu` build can't.
 - **TLS trust store.** Neither variant ships a CA bundle; both read the host's.
   Distributions install one with the `ca-certificates` package, but minimal and
   distroless images often do not, and every request then fails with a certificate
