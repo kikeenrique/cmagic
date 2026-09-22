@@ -5,9 +5,15 @@
 # linked against glibc, with the Swift runtime bundled by --static-swift-stdlib so
 # users need no toolchain installed.
 #
+# "Bundled runtime" is not "no dependencies". The binary still loads, from the host:
+# glibc, libstdc++, libgcc_s, and libcurl — FoundationNetworking does its HTTP
+# through libcurl, and a static Swift stdlib does not carry curl with it. Nearly
+# every distribution installs libcurl, but minimal and distroless images may not;
+# `package-linux-musl` has none of these dependencies and covers those hosts.
+#
 # glibc's symbol versioning sets a floor — the binary will not start on a system
-# whose glibc is older than the one it was built against — so this runs in an
-# older distribution's container than the CI job uses. See release.yml.
+# whose glibc is older than the one it was built against — so this runs in the
+# oldest-glibc image that links, RHEL UBI 9 (2.34). See release.yml.
 #
 # Unlike the musl SDK, this cannot cross-compile: `--static-swift-stdlib` links
 # against the host's glibc, so each architecture is built on a native runner.
@@ -30,7 +36,15 @@ triple="$arch-unknown-linux-gnu"
 rm -f "dist/SHA256SUMS.linux-gnu-$arch" "dist/cmagic-$triple.tar.gz"
 mkdir -p dist
 
-flags=(-c release --disable-sandbox --product cmagic --static-swift-stdlib)
+# --build-system native, because Swift 6.4's default backend (Swift Build) cannot
+# link a static stdlib here: it passes libFoundation.a without the static
+# CoreFoundation archive behind it, and the link dies on ~1,650 undefined __CF*
+# symbols — first in swift-openapi-generator's plugin tool, so there is no scoping
+# around it. Proven across five images: every one fails on Swift Build and links
+# on native. `swift build --help` marks native as deprecated, so this is a
+# workaround with an expiry date: retry without it on each toolchain bump, and drop
+# it once Swift Build links.
+flags=(-c release --disable-sandbox --build-system native --product cmagic --static-swift-stdlib)
 swift build "${flags[@]}"
 bin="$(swift build "${flags[@]}" --show-bin-path)"
 # Diagnostic only, and not every image ships file(1) — never fail the build for it.

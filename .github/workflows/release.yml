@@ -66,22 +66,24 @@ jobs:
           - arch: aarch64
             runner: ubuntu-26.04-arm
     runs-on: ${{ matrix.runner }}
-    # Noble, not jammy, despite jammy giving a lower glibc floor: on jammy,
-    # --static-swift-stdlib fails to link Foundation statically —
-    #   libFoundation.a(CharacterSet.swift.o): undefined reference to
-    #   'CFCharacterSetGetPredefined'
-    # — so there is no glibc artefact to set a floor for. This is the cheap test of
-    # whether noble's static libraries are intact; if they are, the floor becomes
-    # noble's glibc 2.39, which is high enough to be worth re-examining whether a
-    # -gnu build earns its place next to the fully static -musl one.
-    container: swift:6.4-noble
+    # RHEL UBI 9 for the lowest glibc floor that links: 2.34, so the binary runs on
+    # RHEL 9, Debian 12 and Ubuntu 22.04 onward — measured across five images by a
+    # probe run (ubi9 2.34, jammy 2.35, bookworm 2.36, noble 2.39, resolute 2.43).
+    # The image is not what made the static link fail; the build backend was, which
+    # package-linux-gnu handles. swiftly builds its Linux release on UBI for the same
+    # reason.
+    container: swift:6.4-rhel-ubi9
     steps:
       - uses: actions/checkout@v7
 
-      - name: Install curl
-        # The swift.org images ship neither curl nor wget, and jdx/mise-action needs
-        # one to download mise. The container runs as root, so no sudo.
-        run: apt-get update && apt-get install -y --no-install-recommends curl
+      - name: Install tar and gzip
+        # UBI is dnf-based and not guaranteed to carry tar, which actions/cache and the
+        # packaging task both need. It does ship curl-minimal, which is enough for
+        # jdx/mise-action; installing full curl would conflict with it, so only fall
+        # back to curl-minimal if curl is somehow absent. Runs as root, so no sudo.
+        run: |
+          dnf install -y tar gzip
+          command -v curl >/dev/null 2>&1 || dnf install -y curl-minimal
 
       - name: Install mise
         uses: jdx/mise-action@v4
