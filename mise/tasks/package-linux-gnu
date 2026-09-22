@@ -33,7 +33,8 @@ mkdir -p dist
 flags=(-c release --disable-sandbox --product cmagic --static-swift-stdlib)
 swift build "${flags[@]}"
 bin="$(swift build "${flags[@]}" --show-bin-path)"
-file "$bin/cmagic"
+# Diagnostic only, and not every image ships file(1) — never fail the build for it.
+command -v file >/dev/null 2>&1 && file "$bin/cmagic" || true
 
 # gzip -n omits the timestamp/name so repeated packaging of the same binary is
 # byte-identical, matching how `package` builds its darwin archives.

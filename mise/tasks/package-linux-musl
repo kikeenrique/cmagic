@@ -28,7 +28,8 @@ build() {
   triple="$2"
   swift build -c release --disable-sandbox --product cmagic --swift-sdk "$sdk"
   bin="$(swift build -c release --disable-sandbox --product cmagic --swift-sdk "$sdk" --show-bin-path)"
-  file "$bin/cmagic"
+  # Diagnostic only, and not every image ships file(1) — never fail the build for it.
+  command -v file >/dev/null 2>&1 && file "$bin/cmagic" || true
   # gzip -n omits the timestamp/name so repeated packaging of the same binary is
   # byte-identical, matching how `package` builds its darwin archives.
   tar -cf - -C "$bin" cmagic | gzip -n > "dist/cmagic-$triple.tar.gz"
