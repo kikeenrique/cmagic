@@ -36,15 +36,18 @@ triple="$arch-unknown-linux-gnu"
 rm -f "dist/SHA256SUMS.linux-gnu-$arch" "dist/cmagic-$triple.tar.gz"
 mkdir -p dist
 
-# --build-system native, because Swift 6.4's default backend (Swift Build) cannot
-# link a static stdlib here: it passes libFoundation.a without the static
-# CoreFoundation archive behind it, and the link dies on ~1,650 undefined __CF*
-# symbols — first in swift-openapi-generator's plugin tool, so there is no scoping
-# around it. Proven across five images: every one fails on Swift Build and links
-# on native. `swift build --help` marks native as deprecated, so this is a
-# workaround with an expiry date: retry without it on each toolchain bump, and drop
-# it once Swift Build links.
-flags=(-c release --disable-sandbox --build-system native --product cmagic --static-swift-stdlib)
+# -Xswiftc -static-stdlib works around swiftlang/swift-build#1764 on Swift 6.4.0.
+# Swift Build, the default backend, applies the static stdlib at link time but
+# compiles against the dynamic resource directory, so the object files never
+# request CoreFoundation, ICU and friends and the link dies on ~1,650 undefined
+# __CF* symbols. Passing -static-stdlib to compile tasks as well is exactly what the
+# upstream fix (swiftlang/swift-build#1763) does. It merged to main on 2026-09-22;
+# its backports to 6.4.1 and 6.4.2 were still open at the time of writing. Once
+# the toolchain carries the fix, the flag is redundant but harmless — drop it then.
+#
+# The alternative, --build-system native, also links, but that backend is marked
+# deprecated; this keeps the build on the supported one.
+flags=(-c release --disable-sandbox --product cmagic --static-swift-stdlib -Xswiftc -static-stdlib)
 swift build "${flags[@]}"
 bin="$(swift build "${flags[@]}" --show-bin-path)"
 # Diagnostic only, and not every image ships file(1) — never fail the build for it.
