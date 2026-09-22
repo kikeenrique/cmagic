@@ -66,10 +66,15 @@ jobs:
           - arch: aarch64
             runner: ubuntu-26.04-arm
     runs-on: ${{ matrix.runner }}
-    # Jammy rather than the CI job's noble: glibc symbol versioning means the
-    # binary will not start on anything older than its build glibc, so the
-    # release is built on the oldest distribution the toolchain still supports.
-    container: swift:6.4-jammy
+    # Noble, not jammy, despite jammy giving a lower glibc floor: on jammy,
+    # --static-swift-stdlib fails to link Foundation statically —
+    #   libFoundation.a(CharacterSet.swift.o): undefined reference to
+    #   'CFCharacterSetGetPredefined'
+    # — so there is no glibc artefact to set a floor for. This is the cheap test of
+    # whether noble's static libraries are intact; if they are, the floor becomes
+    # noble's glibc 2.39, which is high enough to be worth re-examining whether a
+    # -gnu build earns its place next to the fully static -musl one.
+    container: swift:6.4-noble
     steps:
       - uses: actions/checkout@v7
 
