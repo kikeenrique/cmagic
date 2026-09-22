@@ -7,6 +7,14 @@ name: Probe glibc containers
 # across every candidate image at once to find which ones work, and at what glibc
 # floor, so release.yml can be pointed at the lowest floor that links.
 #
+# First run answered a different question than intended: all five images fail
+# identically (~1,650 undefined __CF* symbols, linking swift-openapi-generator's
+# plugin tool), so the image is not the variable. The link line shows Swift Build
+# layout (.build/out/...) and no static CoreFoundation archive among the
+# libraries passed — Swift 6.4's default backend appears not to expand the static
+# stdlib's link dependencies the way the native backend does. This run pins
+# --build-system native to test exactly that.
+#
 # Delete this file once that question is settled.
 
 on:
@@ -44,11 +52,11 @@ jobs:
       - name: Link with --static-swift-stdlib
         # No mise and no packaging: those need apt or dnf depending on the image,
         # and the only question here is whether the static link succeeds.
-        run: swift build -c release --disable-sandbox --product cmagic --static-swift-stdlib
+        run: swift build -c release --disable-sandbox --build-system native --product cmagic --static-swift-stdlib
 
       - name: Confirm the binary is actually static
         run: |
-          bin="$(swift build -c release --disable-sandbox --product cmagic --static-swift-stdlib --show-bin-path)"
+          bin="$(swift build -c release --disable-sandbox --build-system native --product cmagic --static-swift-stdlib --show-bin-path)"
           ls -l "$bin/cmagic"
           # A Swift runtime still showing here would mean the flag did not take.
           ldd "$bin/cmagic" || echo "not a dynamic executable (fully static)"
