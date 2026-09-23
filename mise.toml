@@ -1,6 +1,8 @@
 # mise tasks for the cmagic CLI.
-# `package` and `release` are file tasks under mise/tasks/ — the release CI runs
-# the same `mise run package` so a human and CI build identical artifacts.
+# The release tasks are file tasks under mise/tasks/: `package` (macOS),
+# `package-linux-gnu`, `package-linux-musl`, `smoke-test` and `release`. The
+# release CI runs the same `mise run package*` so a human and CI build identical
+# artifacts.
 
 [task_config]
 includes = ["mise/tasks"]

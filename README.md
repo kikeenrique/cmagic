@@ -33,19 +33,26 @@ package replaces that with a typed Swift client.
 
 Prebuilt binaries are attached to each
 [GitHub release](https://github.com/kikeenrique/cmagic/releases): a universal
-(arm64 + x86_64) macOS binary, and Linux binaries for x86_64 and aarch64 in two
-variants — `-gnu` for glibc distributions (Debian, Ubuntu, Fedora, RHEL and the
-rest), and `-musl` for Alpine, other musl distributions, and distroless images.
-Both bundle the Swift runtime, so no toolchain is needed. Installers pick the
-right one automatically; downloading by hand, take `-gnu` unless you know you
-are on musl.
+(arm64 + x86_64) macOS binary and, from 0.4.0 on, Linux binaries for x86_64 and
+aarch64 in two variants — `-gnu` for glibc distributions (Debian, Ubuntu, Fedora,
+RHEL and the rest), and `-musl` for Alpine, other musl distributions, and
+distroless images. Both bundle the Swift runtime, so no toolchain is needed.
+Installers pick the right one automatically; downloading by hand, take `-gnu`
+unless you know you are on musl.
+
+| Asset | Platform |
+|---|---|
+| `cmagic-{aarch64,x86_64}-apple-darwin.tar.gz` | macOS 13+ (one universal binary under both names) |
+| `cmagic-{aarch64,x86_64}-unknown-linux-gnu.tar.gz` | Linux, glibc 2.34+ |
+| `cmagic-{aarch64,x86_64}-unknown-linux-musl.tar.gz` | Linux, any libc — fully static |
+| `SHA256SUMS` | checksums for all of the above |
 
 ```bash
 # Homebrew
 brew install kikeenrique/tap/cmagic
 
 # mise (github backend; ubi: also works but is deprecated upstream)
-mise use -g github:kikeenrique/cmagic        # latest, or pin @v0.3.0
+mise use -g github:kikeenrique/cmagic        # latest, or pin @v0.4.0
 ```
 
 Or build from source (see below) and copy `.build/release/cmagic` onto your `PATH`.
@@ -74,6 +81,38 @@ Or build from source (see below) and copy `.build/release/cmagic` onto your `PAT
 swift build            # or: mise run build
 swift test             # or: mise run test
 ```
+
+Both work on macOS and Linux with a Swift 6 toolchain; CI runs them on each. On Linux one test,
+`downloadsArtefactToFile`, is skipped: corelibs Foundation's `URLSession.download(for:)` crashes
+when the response comes from a stubbed `URLProtocol`, so the stub-driven test cannot run there.
+The comment on the test records the stack trace and when to re-enable it.
+
+## Releasing
+
+Releases are cut from `v`-prefixed git tags and built by
+[`.github/workflows/release.yml`](.github/workflows/release.yml): four parallel builders (macOS,
+Linux glibc on x86_64 and aarch64, Linux musl for both arches) and a publish job that merges their
+checksums and attaches everything to the GitHub release. Each Linux binary that can run on its
+builder is smoke-tested first — it must reach the Codemagic API over TLS — or nothing is published.
+
+```bash
+gh workflow run Release              # dry run: builds + smoke-tests everything, publishes nothing
+mise run release v0.4.0              # the real thing: tags HEAD and pushes the tag
+```
+
+- **Dry-run first.** A manual dispatch runs the whole pipeline but stops short of publishing; its
+  `dry-run-dist` workflow artefact holds exactly what the release would carry. Only a tag publishes.
+- **Bump the version before tagging.** `mise run release` refuses to tag unless the tag matches
+  `cmagicVersion` in `Sources/cmagic/Version.swift`, so a binary never reports the wrong version.
+- **Suffixed tags are prereleases.** `v0.4.1-rc1` publishes with `--prerelease`, which keeps it out
+  of GitHub's "latest release" and so away from installers — a safe way to rehearse a release.
+- **Re-running is safe.** Re-running a tag's workflow run (`gh run rerun <id>`) refreshes the
+  existing release's assets instead of failing, and `mise run release` reuses a tag already on HEAD,
+  so a failed push can be retried with the same command.
+
+The packaging lives in `mise` tasks so a human and CI run the same thing: `mise run package`
+(macOS), `package-linux-gnu`, `package-linux-musl` and `smoke-test`. The two Linux ones need a
+swift.org toolchain and run in CI; see each task's header for why.
 
 ## Usage
 
@@ -141,6 +180,16 @@ spec is kept for reference.
 
 ```
 Package.swift
+mise.toml                        # build/test tasks; includes mise/tasks/
+mise/tasks/
+  package                        # macOS universal binary → dist/ (lipo of per-arch builds)
+  package-linux-gnu              # Linux glibc binary for the host arch (static Swift runtime)
+  package-linux-musl             # Linux musl binaries, both arches (Static Linux SDK)
+  smoke-test                     # unpack a tarball; check it runs and reaches the API over TLS
+  release                        # tag + push, refusing if the tag and cmagicVersion disagree
+.github/workflows/
+  ci.yml                         # build + test on macOS and Linux
+  release.yml                    # build, smoke-test and publish; manual dispatch = dry run
 Sources/
   CodemagicApiKit/               # library: generated OpenAPI client + auth + config + artefact download
     openapi.json                 # spec fed to the generator (copy of documentation/openapi-v1.generated.json)
@@ -159,7 +208,7 @@ Sources/
     ArtifactsCommand.swift       # artifacts pull/public-url + unzip
     CachesCommand.swift          # caches list/delete
     OutputOptions.swift          # shared --json flag + emitter
-Tests/CodemagicApiKitTests/      # 28 offline tests (config, decoding, auth, Replay stubs)
+Tests/CodemagicApiKitTests/      # 28 offline tests (config, decoding, auth, Replay stubs); 1 skipped on Linux
 Scripts/
   GenerateOpenAPIV1.swift        # scrapes the v1 HTML docs → OpenAPI, merging a hand-authored patch
 documentation/
