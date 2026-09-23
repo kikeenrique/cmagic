@@ -8,7 +8,7 @@ Legend: ✅ done · ⏳ pending · 🔑 blocked on a live `CM_TOKEN`.
 
 ## Status (September 2026)
 
-**Phases 0–6 complete; 0.4.0 ready to tag.** The `cmagic` CLI implements
+**Phases 0–6 complete; 0.4.0 released.** The `cmagic` CLI implements
 the full command surface — `apps`, `builds`, `build show`/`show --steps`/`start`/`cancel`/`logs`,
 `artifacts pull/public-url`, `caches list/delete` — each with `--json` output, all verified live
 against a real token (`build start` verified live on 2026-07-15 via a start→cancel→show
@@ -25,7 +25,7 @@ pipeline proven end to end on a published-then-deleted release candidate (Phase 
 Every endpoint the CLI uses is live-confirmed, `instanceType` included, so no spec question is
 outstanding (see PROCESS.md §5). `cmagic --version` reports the release the binary was built from.
 
-**Remaining:** tag `v0.4.0`; retire two toolchain workarounds once upstream fixes ship (see
+**Remaining:** retire two toolchain workarounds once upstream fixes ship (see
 [Pending](#pending-)); and the open questions below (revisit v3; preview-API stability).
 
 ## Phase 0 — Research & API specs ✅
@@ -207,12 +207,13 @@ the entries record what each failure taught.
 - [x] **Docs** — the README trimmed to a user-facing intro (what cmagic does, install with an
       asset table, Linux notes, getting started); build, layout, spec regeneration and the new
       release process moved to [`DEVELOPMENT.md`](../DEVELOPMENT.md); PROCESS.md §7.
-- [x] **Version `0.4.0`** in `Version.swift`, ahead of the tag.
+- [x] **Released `0.4.0`** (2026-09-23) — `cmagicVersion` bumped, tagged `v0.4.0`. Verified on the
+      published release: seven assets, not a prerelease, `releases/latest` now `v0.4.0` so installers
+      pick it up, every checksum matching GitHub's own digest, and the macOS binary reporting `0.4.0`.
+      The repo is also now MIT-licensed.
 
 ## Pending ⏳
 
-- [ ] **Tag `v0.4.0`** — `mise run release v0.4.0` from a terminal with SSH access (the agent's
-      session has none), then confirm the release carries seven assets and is *not* a prerelease.
 - [ ] **Drop `-Xswiftc -static-stdlib`** from `package-linux-gnu` once the toolchain carries
       [#1763]. Its backports to 6.4.1 (#1772) and 6.4.2 (#1771) were open as of 2026-09-23. Move the
       `swift:6.4-*` container tags and the Static Linux SDK pin together — the SDK only works with
