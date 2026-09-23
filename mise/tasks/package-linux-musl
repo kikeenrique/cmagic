@@ -24,16 +24,21 @@ mkdir -p dist
 # *host* is musl (glibc hosts accept any asset), and `mise` scores rather than
 # filters, so the honest `-musl` name costs nothing on glibc hosts.
 # Fail rather than silently ship debug info again: the whole point of the flag is
-# the download size. readelf comes with binutils, which the Swift images carry;
-# where it is missing the check is skipped rather than failed.
+# the download size. The check needs readelf (binutils). It always says what it did,
+# because a silent skip is indistinguishable from a pass: where readelf is missing it
+# emits a GitHub Actions warning, which shows on the run's summary page.
 assert_no_debug_info() {
+  if ! command -v readelf >/dev/null 2>&1; then
+    echo "::warning::debug-info check skipped for $(basename "$1") — readelf not available"
+    return 0
+  fi
   # Read the headers into a variable first: piping readelf into `grep -q` lets grep
   # exit on the first match, readelf die of SIGPIPE, and pipefail turn a hit into a miss.
-  command -v readelf >/dev/null 2>&1 || return 0
   if grep -q '\.debug_info' <<<"$(readelf -S "$1")"; then
     echo "debug info still present in $1 — --strip-debug did not take effect" >&2
     exit 1
   fi
+  echo "debug-info check passed: no .debug_info in $1 (readelf)"
 }
 
 # -Xlinker --strip-debug: the Static Linux SDK's prebuilt static libraries —
