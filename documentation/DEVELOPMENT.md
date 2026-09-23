@@ -37,6 +37,7 @@ helpers: artefact download, public URLs and step logs. [`PROCESS.md`](./PROCESS.
 
 ```
 Package.swift
+LICENSE                          # MIT
 mise.toml                        # build/test tasks; includes mise/tasks/
 mise/tasks/
   package                        # macOS universal binary → dist/ (lipo of per-arch builds)

@@ -14,6 +14,7 @@
 [![CI](https://img.shields.io/github/actions/workflow/status/kikeenrique/cmagic/ci.yml?branch=main&label=CI)](https://github.com/kikeenrique/cmagic/actions/workflows/ci.yml)
 ![Platform](https://img.shields.io/badge/platform-macOS%2013%2B%20%7C%20Linux-lightgrey)
 ![Swift](https://img.shields.io/badge/swift-6.0-orange)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 **cmagic** is a command-line tool for [Codemagic](https://codemagic.io), the CI/CD service for
 mobile apps. It lets you check on your builds and grab their output — logs, test results, built
@@ -124,3 +125,8 @@ between two calls can show up twice — de-duplicate by `_id` if that matters.
 
 Building from source, running the tests, how the code is laid out, how the API client is generated,
 and how releases are cut are all in [`documentation/DEVELOPMENT.md`](documentation/DEVELOPMENT.md).
+
+## License
+
+cmagic is available under the [MIT License](LICENSE). "Codemagic" is a trademark of its owner; this
+project is independent of it.
