@@ -214,7 +214,34 @@ the entries record what each failure taught.
       pick it up, every checksum matching GitHub's own digest, and the macOS binary reporting `0.4.0`.
       The repo is also now MIT-licensed.
 
+## Phase 7 — Release size ✅
+
+September 2026, after 0.4.0. The 0.4.0 Linux binaries shipped unstripped: the musl download was
+54.8 MB, ~17× the macOS one, because the Static Linux SDK's prebuilt static libraries (Foundation,
+ICU, curl, BoringSSL) carry their DWARF and full static linking pulled all 87 MB of it in.
+
+- [x] **Link the Linux binaries with `-Xlinker --strip-debug`** — drops DWARF, keeps the symbol
+      table: the same shape as the macOS binary (~27,000 symbols, no embedded debug info, since
+      Mach-O keeps DWARF in dSYMs), and it keeps function names in Swift crash backtraces.
+      Stripping everything would save ~2.7 MB more per build and leave backtraces as bare
+      addresses. Linker-time rather than a post-build `objcopy`, so the aarch64 musl slice needs
+      no cross-arch tool on the x86_64 runner. Verified by a Release dry run, measured on its
+      artefacts:
+
+      | tar.gz | 0.4.0 | stripped |
+      |---|---|---|
+      | musl x86_64 / aarch64 | 55.0 / 53.7 MB | **25.7 / 25.3 MB** (−53%) |
+      | glibc x86_64 / aarch64 | 25.9 / 25.5 MB | 24.0 / 23.6 MB (−7%) |
+
+      All four binaries have zero `.debug_*` sections and keep 150–250k symbols; smoke tests pass.
+      Stripping cannot reach macOS size — both Linux builds carry ~35 MB of `.rodata`, Foundation
+      and the ICU data, that macOS takes from the OS — but musl's penalty against glibc drops from
+      2.1× to ~7%.
+- [x] **Guard against regression** — each Linux task fails if `.debug_info` survives the link.
+
 ## Pending ⏳
+
+- [ ] **Cut 0.4.1** to ship the smaller Linux binaries — bump `cmagicVersion`, dry-run, tag.
 
 - [ ] **Drop `-Xswiftc -static-stdlib`** from `package-linux-gnu` once a released toolchain carries
       [#1763]. As of 2026-09-23 the backport to the `release/6.4.x` branch (#1770) has merged, while
