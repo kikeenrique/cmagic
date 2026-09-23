@@ -204,8 +204,9 @@ the entries record what each failure taught.
       prerelease with seven assets, checksums verified against the downloads, the macOS binary run
       on a real Mac, `releases/latest` left on `v0.3.0`, a `gh run rerun` exercising the
       `--clobber` refresh (checksums re-verified against GitHub's own digests), then deleted.
-- [x] **Docs** — README install table, Linux notes, a "Releasing" section and the full layout;
-      PROCESS.md §7.
+- [x] **Docs** — the README trimmed to a user-facing intro (what cmagic does, install with an
+      asset table, Linux notes, getting started); build, layout, spec regeneration and the new
+      release process moved to [`DEVELOPMENT.md`](../DEVELOPMENT.md); PROCESS.md §7.
 - [x] **Version `0.4.0`** in `Version.swift`, ahead of the tag.
 
 ## Pending ⏳
