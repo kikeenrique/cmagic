@@ -6,9 +6,9 @@ the verification audit are in [`../PROCESS.md`](../PROCESS.md).
 
 Legend: ✅ done · ⏳ pending · 🔑 blocked on a live `CM_TOKEN`.
 
-## Status (August 2026)
+## Status (September 2026)
 
-**Phases 0–5 complete.** The `cmagic` CLI implements
+**Phases 0–6 complete; 0.4.0 ready to tag.** The `cmagic` CLI implements
 the full command surface — `apps`, `builds`, `build show`/`show --steps`/`start`/`cancel`/`logs`,
 `artifacts pull/public-url`, `caches list/delete` — each with `--json` output, all verified live
 against a real token (`build start` verified live on 2026-07-15 via a start→cancel→show
@@ -16,14 +16,17 @@ round-trip that consumed no real build minutes). Both `artifacts` subcommands ac
 `--build-id` to target a specific build (instead of the latest build on a branch), fetched via the already-tested
 `Codemagic.build(id:)`. The `CodemagicApiKit` library wraps a
 swift-openapi-generator client (auth middleware + config-file token + artefact downloader). GitHub
-Actions CI runs build + test. 28 offline tests, ~83% library line coverage (networked paths stubbed
-with Replay). Released through `0.3.0` with prebuilt universal binaries; consumed by `mise` and a
-separately-maintained Homebrew tap.
+Actions CI runs build + test on macOS and Linux. 28 offline tests, ~83% library line coverage
+(networked paths stubbed with Replay). Released through `0.3.0` with prebuilt universal macOS
+binaries; **0.4.0 adds Linux** — glibc and musl binaries for x86_64 and aarch64 — through a release
+pipeline proven end to end on a published-then-deleted release candidate (Phase 6). Consumed by
+`mise` and a separately-maintained Homebrew tap.
 
 Every endpoint the CLI uses is live-confirmed, `instanceType` included, so no spec question is
 outstanding (see PROCESS.md §5). `cmagic --version` reports the release the binary was built from.
 
-**Remaining:** only the open questions below (revisit v3; preview-API stability).
+**Remaining:** tag `v0.4.0`; retire two toolchain workarounds once upstream fixes ship (see
+[Pending](#pending-)); and the open questions below (revisit v3; preview-API stability).
 
 ## Phase 0 — Research & API specs ✅
 
@@ -112,7 +115,7 @@ All four verified live against the real token.
       package` on a `v*`
       tag and attaches the assets, creating the release or refreshing an existing one's assets so
       a re-pushed tag re-runs cleanly (SwiftPM cache in a release-scoped key
-      that warm-starts from the CI dependency cache).
+      that warm-starts from the CI dependency cache). Extended to Linux in Phase 6.
 - [x] Cut the first release — tag `v0.1.0`, universal binaries published to the GitHub release.
 - [x] Distribution consumers — `mise` via the `github:` backend
       (`mise use github:kikeenrique/cmagic`; prefer it over the deprecated `ubi:`, which forces a
@@ -122,7 +125,8 @@ All four verified live against the real token.
       them.
 - [x] CI (build + test) on the standalone repo — GitHub Actions (`.github/workflows/ci.yml`),
       `swift build` + `swift test` on `macos-26`/Xcode 26.6, with SwiftPM caching. Action versions
-      kept current: `actions/checkout@v7`, `actions/cache@v6`, `jdx/mise-action@v4`.
+      kept current: `actions/checkout@v7`, `actions/cache@v6`, `jdx/mise-action@v4`. A Linux job
+      and newer artifact actions were added in Phase 6.
 
 Repo public, default branch `main`. cmagic publishes `v`-prefixed tagged releases with prebuilt
 universal binaries; downstream packaging (a separate Homebrew tap, `mise`) consumes them.
@@ -153,6 +157,77 @@ August 2026. Prompted by `cmagic builds --limit 300` returning 30 builds.
 - [x] Cut `0.3.0` — `cmagicVersion` bumped, tagged `v0.3.0`. **Breaking:** `builds --json` now
       emits `{builds, nextPage}` instead of a bare array, so `jq '.[]'` pipelines become
       `jq '.builds[]'`
+
+## Phase 6 — Linux support & multi-platform release ✅
+
+September 2026. Every Linux path below was first proven in CI, and most were first *broken* there —
+the entries record what each failure taught.
+
+- [x] **Linux source compatibility.** `Codemagic.swift` now imports `FoundationNetworking`: on Linux,
+      Foundation vends a `typealias URLSession = AnyObject` placeholder, so the stored session
+      silently took the stub and every call site failed to compile. `artifacts pull` resolves
+      `unzip` off `PATH` instead of hard-coding `/usr/bin/unzip`, and keeps the archive with a clear
+      error when it is missing.
+- [x] **CI on Linux** — `swift build` + `swift test` in a `swift:6.4-noble` container. All 28 tests
+      pass there except `downloadsArtefactToFile`, skipped on corelibs Foundation: its
+      `URLSession.download(for:)` force-unwraps a nil file URL when a stubbed `URLProtocol` delivers
+      bytes rather than a file (a hard crash, so no expected-failure trait can express it). The
+      analysis and a reproduction were handed to the Replay project.
+- [x] **Dependencies raised to current releases**, with the floors now explicit in `Package.swift`
+      rather than only in the lockfile (Replay 0.6.0, swift-openapi-generator 1.13.1,
+      swift-openapi-runtime 1.12.1, …).
+- [x] **Two Linux variants, x86_64 + aarch64 each**, named by full target triple
+      (`-unknown-linux-gnu`, `-unknown-linux-musl`) — the prevailing convention, and free:
+      `ubi` only filters on libc when the *host* is musl, and `mise` scores rather than filters.
+  - `package-linux-gnu` — the conventional primary artefact. Built on **RHEL UBI 9** for the
+    lowest glibc floor that links, **2.34** (measured across five images: ubi9 2.34, jammy 2.35,
+    bookworm 2.36, noble 2.39, resolute 2.43). The Swift runtime is static, but libcurl, libstdc++
+    and libgcc_s come from the host. aarch64 builds on a native arm64 runner.
+  - `package-linux-musl` — fully static via the Static Linux SDK, no dependencies at all; one
+    x86_64 runner emits both arches.
+  - `--static-swift-stdlib` needed a workaround. Swift 6.4's default backend, Swift Build, compiles
+    against the *dynamic* resource directory, so the objects never request CoreFoundation, ICU and
+    the rest ([swiftlang/swift-build#1764]). Passing `-Xswiftc -static-stdlib` reproduces the
+    upstream fix ([#1763]) while staying on the supported backend — the deprecated
+    `--build-system native` also linked, but would tie the build to the past.
+- [x] **`smoke-test` task** — unpacks a tarball, runs it, and drives a real request with a
+      throwaway token: reaching the server for a 401 proves the TLS handshake and certificate
+      validation work, which matters because the static builds carry their own TLS stack.
+- [x] **Release workflow restructured** — macOS, glibc matrix and musl builders feed a publish job
+      that merges per-job checksum fragments into one `SHA256SUMS`. A manual dispatch is a **dry
+      run** that publishes nothing; a suffixed tag publishes as a **prerelease**, so it never shows
+      as "latest" to installers.
+- [x] **CI modernised** — `upload-artifact@v7`, `download-artifact@v8`, runners on
+      `ubuntu-26.04` / `ubuntu-26.04-arm` ahead of `ubuntu-latest`'s migration to 26.04
+      (19 Oct – 19 Nov 2026). The containers carry the build; the host only boots them.
+- [x] **Pipeline proven end to end** — dry runs, then a real `v0.3.1-rc1`: published as a
+      prerelease with seven assets, checksums verified against the downloads, the macOS binary run
+      on a real Mac, `releases/latest` left on `v0.3.0`, a `gh run rerun` exercising the
+      `--clobber` refresh (checksums re-verified against GitHub's own digests), then deleted.
+- [x] **Docs** — README install table, Linux notes, a "Releasing" section and the full layout;
+      PROCESS.md §7.
+- [x] **Version `0.4.0`** in `Version.swift`, ahead of the tag.
+
+## Pending ⏳
+
+- [ ] **Tag `v0.4.0`** — `mise run release v0.4.0` from a terminal with SSH access (the agent's
+      session has none), then confirm the release carries seven assets and is *not* a prerelease.
+- [ ] **Drop `-Xswiftc -static-stdlib`** from `package-linux-gnu` once the toolchain carries
+      [#1763]. Its backports to 6.4.1 (#1772) and 6.4.2 (#1771) were open as of 2026-09-23. Move the
+      `swift:6.4-*` container tags and the Static Linux SDK pin together — the SDK only works with
+      its own toolchain version — then dry-run to confirm.
+- [ ] **Re-enable `downloadsArtefactToFile` on Linux** once corelibs Foundation's `download(for:)`
+      stops force-unwrapping a nil location (`URLSession.swift:849`) or Replay serves download
+      tasks from a file. The skip hides coverage and nothing reports when it becomes unnecessary,
+      so re-check on each Foundation or Replay bump.
+- [ ] *Optional:* smoke-test the aarch64 musl binary, the one artefact that ships unexercised —
+      it needs qemu, or a native arm64 job with the Static Linux SDK installed.
+
+Downstream, outside this repo: the Homebrew tap needs `on_linux` blocks to serve the new assets.
+The tap is maintained separately and consumes the published releases on its own terms.
+
+[swiftlang/swift-build#1764]: https://github.com/swiftlang/swift-build/issues/1764
+[#1763]: https://github.com/swiftlang/swift-build/pull/1763
 
 ## Authentication (decided)
 
