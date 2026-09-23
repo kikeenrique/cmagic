@@ -237,11 +237,15 @@ ICU, curl, BoringSSL) carry their DWARF and full static linking pulled all 87 MB
       Stripping cannot reach macOS size — both Linux builds carry ~35 MB of `.rodata`, Foundation
       and the ICU data, that macOS takes from the OS — but musl's penalty against glibc drops from
       2.1× to ~7%.
-- [x] **Guard against regression** — each Linux task fails if `.debug_info` survives the link.
+- [x] **Guard against regression** — each Linux task fails if `.debug_info` survives the link, and
+      always reports what it did: a pass names the binary, and a skip (no `readelf`) raises a
+      GitHub Actions warning, so a skipped check can't pass for a clean one. Confirmed active in
+      both the UBI 9 and noble images — it checked all four binaries with `readelf`.
+- [x] **Released `0.4.1`** (2026-09-23) — verified on the published release: seven assets, not a
+      prerelease, `releases/latest` now `v0.4.1`, every checksum matching GitHub's own digest, the
+      Linux tarballs at their stripped sizes, and the macOS binary reporting `0.4.1`.
 
 ## Pending ⏳
-
-- [ ] **Cut 0.4.1** to ship the smaller Linux binaries — bump `cmagicVersion`, dry-run, tag.
 
 - [ ] **Drop `-Xswiftc -static-stdlib`** from `package-linux-gnu` once a released toolchain carries
       [#1763]. As of 2026-09-23 the backport to the `release/6.4.x` branch (#1770) has merged, while
