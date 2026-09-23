@@ -47,11 +47,34 @@ mkdir -p dist
 #
 # The alternative, --build-system native, also links, but that backend is marked
 # deprecated; this keeps the build on the supported one.
-flags=(-c release --disable-sandbox --product cmagic --static-swift-stdlib -Xswiftc -static-stdlib)
+#
+# -Xlinker --strip-debug drops DWARF but keeps the symbol table: the same shape as
+# the macOS binary, which has symbols but no embedded debug info, and it keeps
+# function names in Swift crash backtraces. For this binary it saves little
+# (25.9 → 24.5 MB compressed) — the win is in package-linux-musl — but it keeps the
+# two Linux variants treated alike. Stripping everything would save ~2.7 MB more
+# and leave backtraces as bare addresses; not worth it for a CLI run in CI.
+flags=(-c release --disable-sandbox --product cmagic --static-swift-stdlib -Xswiftc -static-stdlib
+  -Xlinker --strip-debug)
 swift build "${flags[@]}"
 bin="$(swift build "${flags[@]}" --show-bin-path)"
 # Diagnostic only, and not every image ships file(1) — never fail the build for it.
 command -v file >/dev/null 2>&1 && file "$bin/cmagic" || true
+ls -l "$bin/cmagic"
+
+# Fail rather than silently ship debug info again: the whole point of the flag is
+# the download size. readelf comes with binutils, which the Swift images carry;
+# where it is missing the check is skipped rather than failed.
+assert_no_debug_info() {
+  # Read the headers into a variable first: piping readelf into `grep -q` lets grep
+  # exit on the first match, readelf die of SIGPIPE, and pipefail turn a hit into a miss.
+  command -v readelf >/dev/null 2>&1 || return 0
+  if grep -q '\.debug_info' <<<"$(readelf -S "$1")"; then
+    echo "debug info still present in $1 — --strip-debug did not take effect" >&2
+    exit 1
+  fi
+}
+assert_no_debug_info "$bin/cmagic"
 
 # gzip -n omits the timestamp/name so repeated packaging of the same binary is
 # byte-identical, matching how `package` builds its darwin archives.
