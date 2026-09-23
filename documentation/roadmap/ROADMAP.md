@@ -25,8 +25,9 @@ pipeline proven end to end on a published-then-deleted release candidate (Phase 
 Every endpoint the CLI uses is live-confirmed, `instanceType` included, so no spec question is
 outstanding (see PROCESS.md §5). `cmagic --version` reports the release the binary was built from.
 
-**Remaining:** retire two toolchain workarounds once upstream fixes ship (see
-[Pending](#pending-)); and the open questions below (revisit v3; preview-API stability).
+**Remaining:** report the Linux download crash upstream, which nobody has yet been asked to fix;
+retire two toolchain workarounds once upstream fixes ship (see [Pending](#pending-)); and the open
+questions below (revisit v3; preview-API stability).
 
 ## Phase 0 — Research & API specs ✅
 
@@ -171,8 +172,9 @@ the entries record what each failure taught.
 - [x] **CI on Linux** — `swift build` + `swift test` in a `swift:6.4-noble` container. All 28 tests
       pass there except `downloadsArtefactToFile`, skipped on corelibs Foundation: its
       `URLSession.download(for:)` force-unwraps a nil file URL when a stubbed `URLProtocol` delivers
-      bytes rather than a file (a hard crash, so no expected-failure trait can express it). The
-      analysis and a reproduction were handed to the Replay project.
+      bytes rather than a file (a hard crash, so no expected-failure trait can express it). An
+      analysis with the stack trace and a reproduction was written up for reporting upstream; no
+      issue has been filed yet (see Pending).
 - [x] **Dependencies raised to current releases**, with the floors now explicit in `Package.swift`
       rather than only in the lockfile (Replay 0.6.0, swift-openapi-generator 1.13.1,
       swift-openapi-runtime 1.12.1, …).
@@ -214,14 +216,21 @@ the entries record what each failure taught.
 
 ## Pending ⏳
 
-- [ ] **Drop `-Xswiftc -static-stdlib`** from `package-linux-gnu` once the toolchain carries
-      [#1763]. Its backports to 6.4.1 (#1772) and 6.4.2 (#1771) were open as of 2026-09-23. Move the
-      `swift:6.4-*` container tags and the Static Linux SDK pin together — the SDK only works with
-      its own toolchain version — then dry-run to confirm.
-- [ ] **Re-enable `downloadsArtefactToFile` on Linux** once corelibs Foundation's `download(for:)`
-      stops force-unwrapping a nil location (`URLSession.swift:849`) or Replay serves download
-      tasks from a file. The skip hides coverage and nothing reports when it becomes unnecessary,
-      so re-check on each Foundation or Replay bump.
+- [ ] **Drop `-Xswiftc -static-stdlib`** from `package-linux-gnu` once a released toolchain carries
+      [#1763]. As of 2026-09-23 the backport to the `release/6.4.x` branch (#1770) has merged, while
+      those to `release/6.4.1` (#1772) and `release/6.4.2` (#1771) are still open, and Docker Hub
+      has no Swift image newer than `6.4.0`. Whichever 6.4 point release ships first with it,
+      move the `swift:6.4-*` container tags and the Static Linux SDK pin together — the SDK only
+      works with its own toolchain version — then drop the flag and dry-run to confirm.
+- [ ] **Report the Linux download crash upstream.** Nobody has been asked to fix it: there is no
+      issue in Replay or in swift-corelibs-foundation. Two defensible targets, and it is worth
+      filing both — corelibs, because `download(for:)` force-unwraps a condition any third-party
+      `URLProtocol` can produce (`URLSession.swift:849`, and `:875` for `download(from:)`), where it
+      should throw; and Replay, where `PlaybackURLProtocol` could write the body to a temporary
+      file for download tasks. The written-up analysis has the stack trace and a reproduction.
+- [ ] **Re-enable `downloadsArtefactToFile` on Linux** once either fix lands. The skip hides
+      coverage and nothing reports when it becomes unnecessary, so re-check on each Foundation or
+      Replay bump.
 - [ ] *Optional:* smoke-test the aarch64 musl binary, the one artefact that ships unexercised —
       it needs qemu, or a native arm64 job with the Static Linux SDK installed.
 

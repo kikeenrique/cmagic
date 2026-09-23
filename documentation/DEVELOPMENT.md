@@ -111,7 +111,7 @@ is published.
 
 ```bash
 gh workflow run Release              # dry run: builds + smoke-tests everything, publishes nothing
-mise run release v0.4.0              # the real thing: tags HEAD and pushes the tag
+mise run release v<x.y.z>            # the real thing: tags HEAD and pushes the tag
 ```
 
 - **Dry-run first.** A manual dispatch runs the whole pipeline but stops short of publishing; its
