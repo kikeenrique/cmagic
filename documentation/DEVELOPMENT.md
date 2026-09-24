@@ -128,6 +128,15 @@ The packaging lives in `mise` tasks so a human and CI run the same thing: `mise 
 (macOS), `package-linux-gnu`, `package-linux-musl` and `smoke-test`. The two Linux ones need a
 swift.org toolchain and run in CI; see each task's header for why.
 
+On Apple Silicon, `mise run package` needs **Rosetta 2** (`softwareupdate --install-rosetta`).
+Building the x86_64 slice also builds the OpenAPI generator's plugin tool for x86_64, and the build
+then runs that tool — without Rosetta it fails with `Bad CPU type in executable`. GitHub's macOS
+runners have Rosetta, so CI is unaffected.
+
+The publish job verifies `SHA256SUMS` exactly as a user would, from inside the folder holding the
+assets, before anything is published. Keep the entries as bare file names: the package tasks hash
+from inside `dist/` for that reason.
+
 Downstream packaging — the separately-maintained Homebrew tap, and `mise` — consumes the published
 releases on its own terms; this repo's responsibility ends at publishing them.
 

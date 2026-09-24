@@ -58,6 +58,17 @@ know you are on musl.
 | `cmagic-{aarch64,x86_64}-unknown-linux-musl.tar.gz` | Linux, any libc — fully static |
 | `SHA256SUMS` | checksums for all of the above |
 
+To check a download, run this in the folder you saved it to — `--ignore-missing` checks just the
+files you have:
+
+```bash
+shasum -a 256 --ignore-missing -c SHA256SUMS    # macOS
+sha256sum --ignore-missing -c SHA256SUMS        # Linux
+```
+
+This works from 0.4.2 on. Earlier releases list each file under a `dist/` folder, so the check
+can't find them.
+
 ### Linux notes
 
 - **Which variant.** The `-gnu` build needs **glibc 2.34 or newer** — RHEL 9,
