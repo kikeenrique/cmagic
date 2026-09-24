@@ -181,6 +181,15 @@ jobs:
           rm dist/SHA256SUMS.*
           cat dist/SHA256SUMS
 
+      - name: Verify checksums the way a user would
+        # Runs the check the README documents, from inside the folder the assets sit in —
+        # which is all a user has. From v0.1.0 to v0.4.1 every entry carried a `dist/`
+        # prefix, so every user-side check failed while the release itself looked fine;
+        # this step would have caught it on the first release. --strict also rejects
+        # malformed lines rather than skipping them.
+        working-directory: dist
+        run: sha256sum --strict -c SHA256SUMS
+
       - name: Publish dry-run artefacts
         if: github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v7
