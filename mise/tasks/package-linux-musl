@@ -62,7 +62,11 @@ build() {
   # gzip -n omits the timestamp/name so repeated packaging of the same binary is
   # byte-identical, matching how `package` builds its darwin archives.
   tar -cf - -C "$bin" cmagic | gzip -n > "dist/cmagic-$triple.tar.gz"
-  sha256sum "dist/cmagic-$triple.tar.gz" | tee -a dist/SHA256SUMS.linux-musl
+  # Hash from inside dist/ so SHA256SUMS lists bare file names. A user verifies in the
+  # folder the downloads land in, so a `dist/` prefix made every line of
+  # `sha256sum -c SHA256SUMS` fail — as it did from v0.1.0 to v0.4.1. tee stays outside
+  # the subshell, so its path is still relative to the project root.
+  (cd dist && sha256sum "cmagic-$triple.tar.gz") | tee -a dist/SHA256SUMS.linux-musl
 }
 
 build x86_64-swift-linux-musl x86_64-unknown-linux-musl

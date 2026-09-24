@@ -24,6 +24,10 @@ file dist/bin/cmagic
 # byte-identical (both wrap the same lipo output) and share one sha256.
 for triple in aarch64-apple-darwin x86_64-apple-darwin; do
   tar -cf - -C dist/bin cmagic | gzip -n > "dist/cmagic-$triple.tar.gz"
-  shasum -a 256 "dist/cmagic-$triple.tar.gz" | tee -a dist/SHA256SUMS.darwin
+  # Hash from inside dist/ so SHA256SUMS lists bare file names. A user verifies in the
+  # folder the downloads land in, so a `dist/` prefix made every line of
+  # `sha256sum -c SHA256SUMS` fail — as it did from v0.1.0 to v0.4.1. tee stays outside
+  # the subshell, so its path is still relative to the project root.
+  (cd dist && shasum -a 256 "cmagic-$triple.tar.gz") | tee -a dist/SHA256SUMS.darwin
 done
 ls -l dist
