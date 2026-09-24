@@ -264,10 +264,12 @@ in the formula) and mise (which doesn't read published checksum files) were unaf
       published file was byte-identical, the tarballs untouched, and a real download verified `OK`
       in a plain folder. The hashes themselves never changed, so nothing pinning a tarball was
       affected. The originals are kept outside the repo in case the change needs reverting.
+- [x] **Released `0.4.2`** (2026-09-24) — the first release built with bare-name checksums and
+      the user-side check. Verified on the published release: seven assets, not a prerelease,
+      `releases/latest` now `v0.4.2`, every checksum matching GitHub's own digest, a real download
+      verifying `OK` in a plain folder, and the macOS binary reporting `0.4.2`.
 
 ## Pending ⏳
-
-- [ ] **Cut 0.4.2** so new releases carry the fixed checksums and the pipeline's user-side check.
 
 - [ ] **Drop `-Xswiftc -static-stdlib`** from `package-linux-gnu` once a released toolchain carries
       [#1763]. As of 2026-09-23 the backport to the `release/6.4.x` branch (#1770) has merged, while

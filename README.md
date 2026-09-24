@@ -42,7 +42,7 @@ calling the API from your own tools.
 brew install kikeenrique/tap/cmagic
 
 # mise (github backend; ubi: also works but is deprecated upstream)
-mise use -g github:kikeenrique/cmagic        # latest, or pin @v0.4.1
+mise use -g github:kikeenrique/cmagic        # latest, or pin @v0.4.2
 ```
 
 Or download a binary from the [releases page](https://github.com/kikeenrique/cmagic/releases).
