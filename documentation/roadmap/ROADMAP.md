@@ -245,7 +245,29 @@ ICU, curl, BoringSSL) carry their DWARF and full static linking pulled all 87 MB
       prerelease, `releases/latest` now `v0.4.1`, every checksum matching GitHub's own digest, the
       Linux tarballs at their stripped sizes, and the macOS binary reporting `0.4.1`.
 
+## Phase 8 — Verifiable checksums ✅
+
+September 2026. Every `SHA256SUMS` from v0.1.0 to v0.4.1 listed its assets under the build path —
+`<hash>  dist/cmagic-….tar.gz` — so a user running `sha256sum -c SHA256SUMS` in their download
+folder had every line fail, even for files sitting right there. The release pipeline never
+noticed, because nothing checked the file from a user's point of view. Homebrew (a hash per asset
+in the formula) and mise (which doesn't read published checksum files) were unaffected.
+
+- [x] **Bare file names** — the three package tasks hash from inside `dist/`.
+- [x] **Check it as a user would** — the publish job runs `sha256sum --strict -c SHA256SUMS` from
+      inside the folder holding the assets, before anything is published.
+- [x] **Documented** — the README gives the verify command for macOS and Linux, with
+      `--ignore-missing` so one downloaded file can be checked on its own.
+- [x] **Past releases corrected** (2026-09-24) — each release's `SHA256SUMS` re-uploaded with the
+      prefix removed, one release at a time: v0.1.0, v0.2.0, v0.3.0, v0.4.0, v0.4.1. Each corrected
+      file was checked against GitHub's own digest for every asset before upload, and after it the
+      published file was byte-identical, the tarballs untouched, and a real download verified `OK`
+      in a plain folder. The hashes themselves never changed, so nothing pinning a tarball was
+      affected. The originals are kept outside the repo in case the change needs reverting.
+
 ## Pending ⏳
+
+- [ ] **Cut 0.4.2** so new releases carry the fixed checksums and the pipeline's user-side check.
 
 - [ ] **Drop `-Xswiftc -static-stdlib`** from `package-linux-gnu` once a released toolchain carries
       [#1763]. As of 2026-09-23 the backport to the `release/6.4.x` branch (#1770) has merged, while

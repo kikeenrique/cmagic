@@ -66,9 +66,6 @@ shasum -a 256 --ignore-missing -c SHA256SUMS    # macOS
 sha256sum --ignore-missing -c SHA256SUMS        # Linux
 ```
 
-This works from 0.4.2 on. Earlier releases list each file under a `dist/` folder, so the check
-can't find them.
-
 ### Linux notes
 
 - **Which variant.** The `-gnu` build needs **glibc 2.34 or newer** — RHEL 9,
